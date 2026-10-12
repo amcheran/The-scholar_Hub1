@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Percent,
 } from 'lucide-react';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface ProfileViewProps {
   profile: UserProfile;
@@ -117,6 +118,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* PWA Install Promotion Card */}
+      <PWAInstallButton variant="card" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form Container (2 columns on large screens) */}

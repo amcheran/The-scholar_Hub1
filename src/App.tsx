@@ -13,6 +13,8 @@ import {
   SavedApplication,
   ApplicationStatus,
 } from './types';
+import { useNetworkStatus } from './hooks/useNetworkStatus';
+import { WifiOff } from 'lucide-react';
 
 function ScholarHubContent() {
   const { showToast } = useToast();
@@ -162,8 +164,18 @@ function ScholarHubContent() {
     );
   };
 
+  const isOnline = useNetworkStatus();
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-900">
+      {/* Offline Connectivity Notification Banner */}
+      {!isOnline && (
+        <div className="bg-amber-600 text-white text-xs font-semibold py-2 px-4 text-center flex items-center justify-center gap-2 shadow-xs z-50">
+          <WifiOff className="w-3.5 h-3.5" />
+          <span>You are currently offline. Cached opportunities and saved tracker items are fully available!</span>
+        </div>
+      )}
+
       {/* Navigation Header & Mobile Bottom Bar */}
       <Navbar
         currentTab={currentTab}

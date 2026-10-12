@@ -1,6 +1,7 @@
 import React from 'react';
 import { Compass, CheckSquare, User, GraduationCap, Bookmark, Sparkles } from 'lucide-react';
 import { UserProfile } from '../types';
+import { PWAInstallButton } from './PWAInstallButton';
 
 export type NavTab = 'explore' | 'tracker' | 'profile';
 
@@ -87,8 +88,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </nav>
 
-          {/* Right Action: Saved Items counter button & Mini Profile */}
+          {/* Right Action: PWA Install, Saved Items counter button & Mini Profile */}
           <div className="flex items-center gap-2 sm:gap-3">
+            <PWAInstallButton variant="nav" />
+
             <button
               onClick={() => onTabChange('tracker')}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-medium transition-colors"

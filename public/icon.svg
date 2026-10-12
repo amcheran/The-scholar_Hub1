@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle with safe margin -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle inner border ring -->
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="#334155" stroke-width="4" opacity="0.6"/>
+
+  <!-- Icon Graphic: Graduation Cap & Financial Sparkle / Emerald Laurel -->
+  <g filter="url(#shadow)" transform="translate(0, 10)">
+    <!-- Mortarboard Diamond -->
+    <polygon points="256,120 420,195 256,270 92,195" fill="url(#emeraldGrad)"/>
+    
+    <!-- Cap Skullcap base -->
+    <path d="M152,226 L152,295 C152,345 200,380 256,380 C312,380 360,345 360,295 L360,226 L256,274 Z" fill="#ffffff" opacity="0.95"/>
+    
+    <!-- Tassel and ribbon -->
+    <path d="M380,205 L415,260 L415,335 C415,340 405,345 400,340 C395,335 395,265 375,215 Z" fill="#fcd34d"/>
+    <circle cx="407" cy="342" r="12" fill="#f59e0b"/>
+    
+    <!-- Emerald Shield Star / Academic Medal in Center -->
+    <circle cx="256" cy="305" r="26" fill="#0f172a"/>
+    <polygon points="256,288 262,301 276,303 266,313 268,327 256,320 244,327 246,313 236,303 250,301" fill="#34d399"/>
+  </g>
+
+  <!-- Subtle bottom branding arc -->
+  <circle cx="256" cy="430" r="10" fill="#10b981"/>
+  <circle cx="230" cy="430" r="6" fill="#334155"/>
+  <circle cx="282" cy="430" r="6" fill="#334155"/>
+</svg>
