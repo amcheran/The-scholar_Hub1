@@ -1,0 +1,6 @@
+{
+  "name": "ScholarHub",
+  "description": "Mobile-first Student Scholarship & Loan Aggregator with personalized matching engine and multi-step application tracker.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
