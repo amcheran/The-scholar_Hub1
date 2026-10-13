@@ -275,7 +275,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
       {/* Opportunities Card Grid */}
       {filteredOpportunities.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 w-full max-w-full">
           {filteredOpportunities.map((opp) => (
             <OpportunityCard
               key={opp.id}
