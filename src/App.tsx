@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useTransition } from 'react';
+import React, { useState, useEffect, useMemo, useTransition, useCallback } from 'react';
 import { Navbar, NavTab } from './components/Navbar';
 import { ExploreView } from './components/ExploreView';
 import { TrackerView } from './components/TrackerView';
@@ -7,6 +7,7 @@ import { ApplyModal } from './components/ApplyModal';
 import { MatchBreakdownModal } from './components/MatchBreakdownModal';
 import { ToastProvider, useToast } from './components/Toast';
 import { ScholarHubDatabase } from './data/database';
+import { fetchOpportunitiesFromSupabase } from './services/opportunitiesService';
 import {
   UserProfile,
   Opportunity,
@@ -22,12 +23,14 @@ function ScholarHubContent() {
 
   // Core reactive database state
   const [profile, setProfile] = useState<UserProfile>(() => ScholarHubDatabase.getProfile());
-  const [opportunities, setOpportunities] = useState<Opportunity[]>(() =>
-    ScholarHubDatabase.getOpportunities()
-  );
   const [savedApplications, setSavedApplications] = useState<SavedApplication[]>(() =>
     ScholarHubDatabase.getSavedApplications()
   );
+
+  // Dynamic opportunities fetched exclusively from Supabase
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [isLoadingOpportunities, setIsLoadingOpportunities] = useState<boolean>(true);
+  const [opportunityError, setOpportunityError] = useState<string | null>(null);
 
   // Navigation tab state
   const [currentTab, setCurrentTab] = useState<NavTab>('explore');
@@ -36,12 +39,25 @@ function ScholarHubContent() {
   const [applyModalOpp, setApplyModalOpp] = useState<Opportunity | null>(null);
   const [matchModalOpp, setMatchModalOpp] = useState<Opportunity | null>(null);
 
-  // Sync to database on mount / verify state
-  useEffect(() => {
-    setProfile(ScholarHubDatabase.getProfile());
-    setOpportunities(ScholarHubDatabase.getOpportunities());
-    setSavedApplications(ScholarHubDatabase.getSavedApplications());
+  // Fetch opportunities dynamically and exclusively from Supabase
+  const loadOpportunities = useCallback(async () => {
+    setIsLoadingOpportunities(true);
+    setOpportunityError(null);
+    try {
+      const data = await fetchOpportunitiesFromSupabase();
+      setOpportunities(data);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch opportunities from Supabase';
+      console.error('Error fetching opportunities from Supabase:', message);
+      setOpportunityError(message);
+    } finally {
+      setIsLoadingOpportunities(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadOpportunities();
+  }, [loadOpportunities]);
 
   // Quick lookup set of tracked opportunity IDs
   const trackedOppIdSet = useMemo(() => {
@@ -151,15 +167,15 @@ function ScholarHubContent() {
     );
   };
 
-  // Reset database
-  const handleResetDatabase = () => {
+  // Reset database & re-sync from Supabase
+  const handleResetDatabase = async () => {
     ScholarHubDatabase.resetDatabase();
     setProfile(ScholarHubDatabase.getProfile());
-    setOpportunities(ScholarHubDatabase.getOpportunities());
     setSavedApplications(ScholarHubDatabase.getSavedApplications());
+    await loadOpportunities();
     showToast(
-      'Demo Data Reset',
-      'Restored initial sample scholarships, loans, and tracker pipeline.',
+      'Supabase Database Re-synced',
+      'Refetched live opportunities dynamically from Supabase.',
       'info'
     );
   };
@@ -189,6 +205,9 @@ function ScholarHubContent() {
         {currentTab === 'explore' && (
           <ExploreView
             opportunities={opportunities}
+            isLoading={isLoadingOpportunities}
+            error={opportunityError}
+            onRetry={loadOpportunities}
             profile={profile}
             savedApplications={savedApplications}
             onToggleSave={handleToggleSave}

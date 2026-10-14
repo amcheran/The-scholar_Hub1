@@ -4,17 +4,20 @@ import { OpportunityCard } from './OpportunityCard';
 import { calculateMatchScore, formatDeadlineCountdown } from '../utils/matchingEngine';
 import {
   Search,
-  SlidersHorizontal,
   X,
   Sparkles,
-  TrendingUp,
-  DollarSign,
-  GraduationCap,
   ArrowUpDown,
+  Database,
+  RefreshCw,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 
 interface ExploreViewProps {
   opportunities: Opportunity[];
+  isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
   profile: UserProfile;
   savedApplications: SavedApplication[];
   onToggleSave: (opportunityId: string) => void;
@@ -28,6 +31,9 @@ type SortOption = 'match' | 'amount_desc' | 'deadline_soon' | 'gpa_asc';
 
 export const ExploreView: React.FC<ExploreViewProps> = ({
   opportunities,
+  isLoading = false,
+  error = null,
+  onRetry,
   profile,
   savedApplications,
   onToggleSave,
@@ -45,10 +51,70 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
     return new Set(savedApplications.map((app) => app.opportunityId));
   }, [savedApplications]);
 
-  // Total available funding
+  // Total available funding calculated dynamically from live Supabase opportunities
   const totalFunding = useMemo(() => {
-    return opportunities.reduce((acc, curr) => acc + curr.amount, 0);
+    if (!opportunities || opportunities.length === 0) return 0;
+    return opportunities.reduce((acc, curr) => {
+      const val = Number(curr.amount);
+      return acc + (isNaN(val) ? 0 : val);
+    }, 0);
   }, [opportunities]);
+
+  // Highest match score for the user's active preferences
+  const topMatchScore = useMemo(() => {
+    if (!opportunities || opportunities.length === 0) return 0;
+    const scores = opportunities
+      .map((o) => calculateMatchScore(profile, o).score)
+      .filter((s) => !isNaN(s));
+    return scores.length > 0 ? Math.max(...scores) : 0;
+  }, [opportunities, profile]);
+
+  // Dynamic user greeting with graceful fallback
+  const userGreetingName = useMemo(() => {
+    const rawName = profile?.fullName?.trim();
+    if (!rawName) return 'Scholar';
+    const firstName = rawName.split(/\s+/)[0];
+    return firstName || 'Scholar';
+  }, [profile?.fullName]);
+
+  // Dynamic field of study display
+  const userFieldOfStudy = useMemo(() => {
+    const rawMajor = profile?.major?.trim();
+    if (!rawMajor || rawMajor.toLowerCase() === 'all majors / undeclared') {
+      return 'your degree';
+    }
+    return `${rawMajor} degree`;
+  }, [profile?.major]);
+
+  // Dynamic search placeholder safely guarded against any 'nan' concatenation bug
+  const searchPlaceholder = useMemo(() => {
+    // If a specific opportunity type is selected
+    if (selectedType && selectedType !== 'all') {
+      const cleanType = String(selectedType).trim();
+      const lowerType = cleanType.toLowerCase();
+      if (cleanType && lowerType !== 'nan' && lowerType !== 'undefined' && lowerType !== 'null') {
+        return `Search ${cleanType}s by name, field, or provider...`;
+      }
+    }
+
+    // If an instant filter pill is selected
+    if (activePill && activePill !== 'all') {
+      const pillMap: Record<string, string> = {
+        due_soon: 'urgent opportunities',
+        no_essay: 'no-essay awards',
+        high_award: '$5k+ opportunities',
+        undergraduate: 'undergraduate awards',
+        graduate: 'graduate awards',
+      };
+      const category = pillMap[activePill];
+      if (category && !category.toLowerCase().includes('nan')) {
+        return `Search ${category} by name, field, or provider...`;
+      }
+    }
+
+    // Default clean fallback without any possibility of "nan"
+    return 'Search scholarships, grants, loans by name, field, or provider...';
+  }, [selectedType, activePill]);
 
   // Filter & sort logic
   const filteredOpportunities = useMemo(() => {
@@ -117,18 +183,30 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
         <div className="absolute bottom-0 right-20 -mb-10 w-48 h-48 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
 
         <div className="relative z-10 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/80 text-emerald-400 text-xs font-semibold mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Matching Engine Active</span>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/80 text-emerald-400 text-xs font-semibold">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AI Matching Engine Active</span>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/80 text-emerald-400 text-xs font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <Database className="w-3 h-3 text-emerald-400" />
+              <span>Live Supabase Database</span>
+            </div>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
-            Welcome back, {profile.fullName.split(' ')[0]}
+            Welcome back, {userGreetingName}
           </h1>
           <p className="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed max-w-2xl">
-            We’ve personalized <strong className="text-white font-semibold">{opportunities.length} opportunities</strong> matching your{' '}
-            <strong className="text-emerald-300 font-semibold">{profile.major}</strong> degree and{' '}
-            <strong className="text-emerald-300 font-semibold">{profile.gpa.toFixed(2)} GPA</strong>.
+            {isLoading ? (
+              <span>Fetching verified opportunities live from Supabase...</span>
+            ) : (
+              <>
+                Loaded <strong className="text-white font-semibold">{opportunities.length} live {opportunities.length === 1 ? 'opportunity' : 'opportunities'}</strong> dynamically from our Supabase database for {userFieldOfStudy}.
+              </>
+            )}
           </p>
 
           {/* Quick Metrics Strip */}
@@ -136,13 +214,19 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-slate-400">Total Program Funding:</span>
               <span className="font-extrabold text-emerald-400 text-base">
-                ${(totalFunding).toLocaleString()}
+                {isLoading ? (
+                  <span className="text-slate-400 font-normal">Loading...</span>
+                ) : totalFunding > 0 ? (
+                  `$${totalFunding.toLocaleString()}`
+                ) : (
+                  'Tuition & Living'
+                )}
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-slate-400">Your Top Match:</span>
               <span className="font-extrabold text-emerald-400 text-base">
-                {Math.max(...opportunities.map((o) => calculateMatchScore(profile, o).score))}%
+                {isLoading ? '...' : `${topMatchScore}%`}
               </span>
             </div>
             <button
@@ -164,13 +248,14 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search scholarships, grants, loans by name, field, or provider..."
+            placeholder={searchPlaceholder}
             className="w-full pl-11 pr-10 py-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all placeholder:text-slate-400"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+              aria-label="Clear search"
             >
               <X className="w-4 h-4" />
             </button>
@@ -216,8 +301,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
             {[
               { id: 'all', label: 'All Types' },
               { id: 'scholarship', label: 'Scholarships' },
-              { id: 'grant', label: 'Grants' },
               { id: 'student loan', label: 'Student Loans' },
+              { id: 'grant', label: 'Grants' },
               { id: 'fellowship', label: 'Fellowships' },
             ].map((t) => (
               <button
@@ -256,8 +341,17 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       {/* Results Header */}
       <div className="flex items-center justify-between px-1">
         <div className="text-xs font-semibold text-slate-500">
-          Showing <span className="text-slate-900 font-bold">{filteredOpportunities.length}</span>{' '}
-          {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
+          {isLoading ? (
+            <span className="flex items-center gap-1.5">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+              Loading Supabase opportunities...
+            </span>
+          ) : (
+            <>
+              Showing <span className="text-slate-900 font-bold">{filteredOpportunities.length}</span>{' '}
+              {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'} (from Supabase)
+            </>
+          )}
         </div>
         {(searchQuery || activePill !== 'all' || selectedType !== 'all') && (
           <button
@@ -273,8 +367,55 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
         )}
       </div>
 
+      {/* Error state */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center max-w-lg mx-auto">
+          <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+          <h3 className="font-bold text-red-900 text-sm">Failed to load Supabase opportunities</h3>
+          <p className="text-xs text-red-700 mt-1 mb-4">{error}</p>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-2"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry Connection</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Loading Skeleton */}
+      {isLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 w-full max-w-full">
+          {[1, 2, 3, 4].map((idx) => (
+            <div
+              key={idx}
+              className="bg-white rounded-2xl border border-slate-200 p-5 animate-pulse space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-slate-200 rounded-xl" />
+                  <div className="space-y-1.5">
+                    <div className="w-24 h-3 bg-slate-200 rounded" />
+                    <div className="w-16 h-2.5 bg-slate-100 rounded" />
+                  </div>
+                </div>
+                <div className="w-20 h-6 bg-slate-200 rounded-lg" />
+              </div>
+              <div className="w-3/4 h-5 bg-slate-200 rounded" />
+              <div className="w-full h-12 bg-slate-100 rounded-xl" />
+              <div className="flex justify-between items-center pt-2">
+                <div className="w-20 h-4 bg-slate-200 rounded" />
+                <div className="w-24 h-8 bg-slate-200 rounded-xl" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Opportunities Card Grid */}
-      {filteredOpportunities.length > 0 ? (
+      {!isLoading && !error && filteredOpportunities.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 w-full max-w-full">
           {filteredOpportunities.map((opp) => (
             <OpportunityCard
@@ -288,26 +429,32 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
             />
           ))}
         </div>
-      ) : (
-        /* Empty State */
+      )}
+
+      {/* Empty State */}
+      {!isLoading && !error && filteredOpportunities.length === 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center max-w-md mx-auto">
           <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
             <Search className="w-6 h-6" />
           </div>
-          <h3 className="font-bold text-slate-900 text-base">No matches found</h3>
+          <h3 className="font-bold text-slate-900 text-base">No opportunities found</h3>
           <p className="text-xs text-slate-500 mt-1 mb-4 leading-relaxed">
-            We couldn't find any opportunities matching your current filters. Try relaxing your search criteria or updating your profile.
+            {searchQuery || activePill !== 'all' || selectedType !== 'all'
+              ? 'No matching listings found for your current filter criteria.'
+              : 'The Supabase database currently has no records matching this query.'}
           </p>
-          <button
-            onClick={() => {
-              setSearchQuery('');
-              setActivePill('all');
-              setSelectedType('all');
-            }}
-            className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors"
-          >
-            Reset Filters
-          </button>
+          {(searchQuery || activePill !== 'all' || selectedType !== 'all') && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setActivePill('all');
+                setSelectedType('all');
+              }}
+              className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors"
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
       )}
     </div>

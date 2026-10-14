@@ -29,19 +29,21 @@ interface ProfileViewProps {
 }
 
 const COMMON_MAJORS = [
+  'General Studies',
+  'STEM',
   'Computer Science',
   'Software Engineering',
+  'Engineering',
+  'Civil Engineering',
   'Mechanical Engineering',
-  'Electrical Engineering',
-  'Data Science & AI',
+  'Medicine',
   'Nursing & Healthcare',
   'Biology / Pre-Med',
+  'Agriculture',
+  'Development Studies',
+  'Education',
   'Business Administration',
   'Finance & Accounting',
-  'Psychology',
-  'Arts & Graphic Design',
-  'Communications & Media',
-  'Education & Teaching',
   'All Majors / Undeclared',
 ];
 
@@ -90,9 +92,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     .sort((a, b) => b.match.score - a.match.score)
     .slice(0, 3);
 
-  const averageSimulatedMatch = Math.round(
-    simulatedMatches.reduce((acc, curr) => acc + curr.match.score, 0) / simulatedMatches.length
-  );
+  const averageSimulatedMatch =
+    simulatedMatches.length > 0
+      ? Math.round(simulatedMatches.reduce((acc, curr) => acc + curr.match.score, 0) / simulatedMatches.length)
+      : 0;
 
   return (
     <div className="space-y-6">
@@ -111,10 +114,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <button
             onClick={onResetDatabase}
             className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-            title="Reset to default seed data"
+            title="Re-sync data directly from Supabase"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Demo Data</span>
+            <span>Re-sync Supabase</span>
           </button>
         </div>
       </div>
@@ -136,10 +139,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
-                    required
                     value={formData.fullName}
                     onChange={(e) => handleChange('fullName', e.target.value)}
-                    placeholder="e.g. Alex Morgan"
+                    placeholder="Enter your name (e.g. Jordan Smith)"
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm font-medium text-slate-900"
                   />
                 </div>
@@ -151,10 +153,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </label>
                 <input
                   type="email"
-                  required
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
-                  placeholder="name@university.edu"
+                  placeholder="student@university.edu"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm font-medium text-slate-900"
                 />
               </div>

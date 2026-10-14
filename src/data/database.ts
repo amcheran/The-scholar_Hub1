@@ -1,69 +1,24 @@
-import { Opportunity, SavedApplication, UserProfile, ApplicationStatus } from '../types';
-import { INITIAL_USER_PROFILE, SEED_OPPORTUNITIES } from './seedOpportunities';
+import { SavedApplication, UserProfile, ApplicationStatus } from '../types';
+import { INITIAL_USER_PROFILE } from './seedOpportunities';
 
 const STORAGE_KEYS = {
   PROFILE: 'scholarhub_table_profiles',
-  OPPORTUNITIES: 'scholarhub_table_opportunities',
   SAVED_APPLICATIONS: 'scholarhub_table_saved_applications',
 };
-
-// Initial default tracker items so user immediately sees rich data on load
-const INITIAL_SAVED_APPLICATIONS: SavedApplication[] = [
-  {
-    id: 'app_saved_01',
-    userId: 'usr_default_01',
-    opportunityId: 'opp_google_tech_2026',
-    status: 'In Progress',
-    progress: 50,
-    savedAt: '2026-10-08T10:00:00Z',
-    updatedAt: '2026-10-11T14:30:00Z',
-    notes: 'Drafted 2 out of 3 technical essay responses. Need recommendation from Prof. Henderson.',
-    steps: [
-      { id: 'step_1', label: 'Verify minimum GPA & eligibility criteria', done: true },
-      { id: 'step_2', label: 'Prepare technical resume & project portfolio', done: true },
-      { id: 'step_3', label: 'Complete 3 diversity & leadership essays', done: false },
-      { id: 'step_4', label: 'Request official faculty recommendation', done: false },
-    ],
-  },
-  {
-    id: 'app_saved_02',
-    userId: 'usr_default_01',
-    opportunityId: 'opp_coca_cola_scholars',
-    status: 'Saved',
-    progress: 0,
-    savedAt: '2026-10-10T16:20:00Z',
-    updatedAt: '2026-10-10T16:20:00Z',
-    notes: 'Due end of month. No essay required for Phase 1. Need to log community service hours.',
-    steps: [
-      { id: 'step_1', label: 'Verify minimum GPA & eligibility criteria', done: true },
-      { id: 'step_2', label: 'Gather documented community service hours', done: false },
-      { id: 'step_3', label: 'Submit Phase 1 digital questionnaire', done: false },
-    ],
-  },
-  {
-    id: 'app_saved_03',
-    userId: 'usr_default_01',
-    opportunityId: 'opp_amazon_engineer_2026',
-    status: 'Submitted',
-    progress: 100,
-    savedAt: '2026-10-01T09:15:00Z',
-    updatedAt: '2026-10-09T18:00:00Z',
-    notes: 'Submitted on Oct 9. Confirmation #AFE-882910. Decision anticipated early December.',
-    steps: [
-      { id: 'step_1', label: 'Verify minimum GPA & eligibility criteria', done: true },
-      { id: 'step_2', label: 'Upload transcript and FAFSA verification', done: true },
-      { id: 'step_3', label: 'Submit personal statement & faculty reference', done: true },
-      { id: 'step_4', label: 'Confirm submission receipt & portal login', done: true },
-    ],
-  },
-];
 
 export class ScholarHubDatabase {
   static getProfile(): UserProfile {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.PROFILE);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        // Clear any legacy hardcoded Alex mock profile so user sees clean dynamic profile
+        if (parsed.fullName === 'Alex Morgan') {
+          parsed.fullName = '';
+          parsed.email = '';
+          this.saveProfile(parsed);
+        }
+        return parsed;
       }
     } catch {
       // fallback
@@ -80,27 +35,6 @@ export class ScholarHubDatabase {
     }
   }
 
-  static getOpportunities(): Opportunity[] {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.OPPORTUNITIES);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch {
-      // fallback
-    }
-    this.saveOpportunities(SEED_OPPORTUNITIES);
-    return SEED_OPPORTUNITIES;
-  }
-
-  static saveOpportunities(opps: Opportunity[]): void {
-    try {
-      localStorage.setItem(STORAGE_KEYS.OPPORTUNITIES, JSON.stringify(opps));
-    } catch (e) {
-      console.error('Failed to save opportunities', e);
-    }
-  }
-
   static getSavedApplications(): SavedApplication[] {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.SAVED_APPLICATIONS);
@@ -110,8 +44,7 @@ export class ScholarHubDatabase {
     } catch {
       // fallback
     }
-    this.saveApplications(INITIAL_SAVED_APPLICATIONS);
-    return INITIAL_SAVED_APPLICATIONS;
+    return [];
   }
 
   static saveApplications(apps: SavedApplication[]): void {
@@ -141,8 +74,8 @@ export class ScholarHubDatabase {
 
     const defaultSteps = [
       { id: 'step_1', label: 'Verify minimum GPA & eligibility requirements', done: true },
-      { id: 'step_2', label: 'Prepare required documents (Transcripts/FAFSA)', done: initialStatus !== 'Saved' },
-      { id: 'step_3', label: 'Complete written application and statements', done: initialStatus === 'Submitted' },
+      { id: 'step_2', label: 'Prepare required documents (Transcripts/Certificates)', done: initialStatus !== 'Saved' },
+      { id: 'step_3', label: 'Complete written application and declarations', done: initialStatus === 'Submitted' },
       { id: 'step_4', label: 'Final review and application submission', done: initialStatus === 'Submitted' },
     ];
 
@@ -278,10 +211,9 @@ export class ScholarHubDatabase {
 
   static resetDatabase(): void {
     localStorage.removeItem(STORAGE_KEYS.PROFILE);
-    localStorage.removeItem(STORAGE_KEYS.OPPORTUNITIES);
     localStorage.removeItem(STORAGE_KEYS.SAVED_APPLICATIONS);
+    localStorage.removeItem('scholarhub_table_opportunities');
     this.saveProfile(INITIAL_USER_PROFILE);
-    this.saveOpportunities(SEED_OPPORTUNITIES);
-    this.saveApplications(INITIAL_SAVED_APPLICATIONS);
+    this.saveApplications([]);
   }
 }
