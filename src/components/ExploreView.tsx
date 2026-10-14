@@ -109,7 +109,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   }, [opportunities, searchQuery, activePill, selectedType, sortBy, profile]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full">
       {/* Welcome Greeting Banner */}
       <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-md relative overflow-hidden">
         {/* Subtle decorative background pattern */}
