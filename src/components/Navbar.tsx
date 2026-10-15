@@ -1,5 +1,4 @@
-import React from 'react';
-import { Compass, CheckSquare, User, GraduationCap, Bookmark, Sparkles } from 'lucide-react';
+import { Compass, CheckSquare, User, GraduationCap, Bookmark, Sparkles, LogOut } from 'lucide-react';
 import { UserProfile } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -10,6 +9,7 @@ interface NavbarProps {
   onTabChange: (tab: NavTab) => void;
   savedCount: number;
   profile: UserProfile;
+  onSignOut?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -17,6 +17,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onTabChange,
   savedCount,
   profile,
+  onSignOut,
 }) => {
   return (
     <>
@@ -123,6 +124,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </div>
             </button>
+
+            {onSignOut && (
+              <button
+                onClick={onSignOut}
+                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-slate-500 hover:text-rose-600 transition-colors"
+                title="Sign out of ScholarHub"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </header>

@@ -163,6 +163,28 @@ export function calculateMatchScore(user: UserProfile, opp: Opportunity): MatchS
     }
   }
 
+  // 5. Target Destination Country Alignment
+  if (user.targetCountry && user.targetCountry !== 'All Countries / Worldwide') {
+    const oppText = `${opp.title} ${opp.description} ${opp.eligibility.join(' ')}`.toLowerCase();
+    const targetLower = user.targetCountry.toLowerCase();
+    const isCountryMatch =
+      oppText.includes(targetLower) ||
+      oppText.includes('international') ||
+      oppText.includes('global') ||
+      oppText.includes('worldwide') ||
+      oppText.includes('africa') ||
+      oppText.includes('all countries');
+
+    breakdown.push({
+      category: 'Destination Country',
+      passed: isCountryMatch,
+      points: isCountryMatch ? 5 : 0,
+      description: isCountryMatch
+        ? `Aligns with your target destination (${user.targetCountry})`
+        : `May require checking residency eligibility for ${user.targetCountry}`,
+    });
+  }
+
   // Clamp score
   const finalScore = Math.min(99, Math.max(50, totalScore));
 

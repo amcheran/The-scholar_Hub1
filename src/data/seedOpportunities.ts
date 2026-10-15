@@ -10,5 +10,6 @@ export const INITIAL_USER_PROFILE: UserProfile = {
   financialNeed: 'Moderate',
   isFirstGen: false,
   citizenship: '',
+  targetCountry: '',
   isConfigured: false,
 };

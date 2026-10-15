@@ -6,6 +6,8 @@ import { ProfileView } from './components/ProfileView';
 import { ApplyModal } from './components/ApplyModal';
 import { MatchBreakdownModal } from './components/MatchBreakdownModal';
 import { ToastProvider, useToast } from './components/Toast';
+import { AuthWall } from './components/AuthWall';
+import { AuthService, AuthSessionState } from './services/authService';
 import { ScholarHubDatabase } from './data/database';
 import { fetchOpportunitiesFromSupabase } from './services/opportunitiesService';
 import {
@@ -20,6 +22,11 @@ import { WifiOff } from 'lucide-react';
 function ScholarHubContent() {
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
+
+  // Persistent Auth Session State (Auto-Login via Supabase & localStorage)
+  const [authSession, setAuthSession] = useState<AuthSessionState>(() =>
+    AuthService.getStoredSession()
+  );
 
   // Core reactive database state
   const [profile, setProfile] = useState<UserProfile>(() => ScholarHubDatabase.getProfile());
@@ -58,6 +65,37 @@ function ScholarHubContent() {
   useEffect(() => {
     loadOpportunities();
   }, [loadOpportunities]);
+
+  // Synchronize session on mount & subscribe to Supabase Auth state changes
+  useEffect(() => {
+    let isMounted = true;
+
+    AuthService.checkCurrentSession().then((session) => {
+      if (isMounted) {
+        setAuthSession(session);
+        setProfile(ScholarHubDatabase.getProfile());
+      }
+    });
+
+    const { data: authListener } = AuthService.onAuthStateChange((state) => {
+      if (isMounted) {
+        setAuthSession(state);
+        setProfile(ScholarHubDatabase.getProfile());
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription?.unsubscribe?.();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    await AuthService.signOut();
+    setAuthSession({ isAuthenticated: false, isGuest: false, user: null });
+    setProfile(ScholarHubDatabase.getProfile());
+    showToast('Signed Out', 'You have been safely signed out. Sessions are cleared.', 'info');
+  };
 
   // Quick lookup set of tracked opportunity IDs
   const trackedOppIdSet = useMemo(() => {
@@ -183,6 +221,25 @@ function ScholarHubContent() {
 
   const isOnline = useNetworkStatus();
 
+  // Authentication Wall: If user is not authenticated, show modern Sign-Up / Login Wall
+  if (!authSession.isAuthenticated) {
+    return (
+      <AuthWall
+        onAuthenticated={(newSession) => {
+          setAuthSession(newSession);
+          setProfile(ScholarHubDatabase.getProfile());
+          showToast(
+            newSession.isGuest ? 'Welcome to ScholarHub' : 'Welcome back!',
+            newSession.isGuest
+              ? 'Entered preview mode. Complete your profile preferences to unlock personalized match scores.'
+              : 'Signed in successfully. Your session will remain active across app reloads.',
+            'success'
+          );
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-900">
       {/* Offline Connectivity Notification Banner */}
@@ -199,6 +256,7 @@ function ScholarHubContent() {
         onTabChange={handleTabChange}
         savedCount={savedApplications.length}
         profile={profile}
+        onSignOut={handleSignOut}
       />
 
       {/* Main Content Area */}
@@ -240,6 +298,7 @@ function ScholarHubContent() {
             onSaveProfile={handleSaveProfile}
             onResetDatabase={handleResetDatabase}
             onGoToExplore={() => handleTabChange('explore')}
+            onSignOut={handleSignOut}
           />
         )}
       </main>

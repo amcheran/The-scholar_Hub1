@@ -11,6 +11,7 @@ import {
   RefreshCw,
   AlertCircle,
   Loader2,
+  ArrowRight,
 } from 'lucide-react';
 
 interface ExploreViewProps {
@@ -242,6 +243,32 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Progressive Profiling Quick Action Callout when user has not yet set preferences */}
+      {!hasPrefs && (
+        <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border border-emerald-200/80 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-xl bg-emerald-600 text-white shrink-0 mt-0.5 shadow-xs">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">
+                Unlock Accurate AI Scholarship Matches
+              </h3>
+              <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                You are currently in guest exploration mode. Set your GPA, degree level, and destination country to unlock real-time match scores and tailored recommendations.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onGoToProfile}
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shrink-0 shadow-xs transition-all"
+          >
+            <span>Enhance Profile Now</span>
+            <ArrowRight className="w-3.5 h-3.5 text-emerald-400" />
+          </button>
+        </div>
+      )}
 
       {/* Search & Instant Filter Bar */}
       <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">

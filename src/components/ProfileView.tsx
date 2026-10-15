@@ -9,14 +9,16 @@ import { calculateMatchScore } from '../utils/matchingEngine';
 import {
   User,
   GraduationCap,
-  BookOpen,
-  DollarSign,
   Sparkles,
   Save,
   RotateCcw,
   CheckCircle2,
   TrendingUp,
-  Percent,
+  Globe,
+  LogOut,
+  Check,
+  ShieldCheck,
+  ArrowRight,
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -26,6 +28,7 @@ interface ProfileViewProps {
   onSaveProfile: (updatedProfile: UserProfile) => void;
   onResetDatabase: () => void;
   onGoToExplore: () => void;
+  onSignOut?: () => void;
 }
 
 const COMMON_MAJORS = [
@@ -47,12 +50,32 @@ const COMMON_MAJORS = [
   'All Majors / Undeclared',
 ];
 
+export const TARGET_COUNTRIES = [
+  'All Countries / Worldwide',
+  'South Africa',
+  'Kenya',
+  'Nigeria',
+  'Ghana',
+  'Rwanda',
+  'Egypt',
+  'United States',
+  'United Kingdom',
+  'Canada',
+  'Germany',
+  'France',
+  'Netherlands',
+  'Australia',
+  'Japan',
+  'China',
+];
+
 export const ProfileView: React.FC<ProfileViewProps> = ({
   profile,
   opportunities,
   onSaveProfile,
   onResetDatabase,
   onGoToExplore,
+  onSignOut,
 }) => {
   const [formData, setFormData] = useState<UserProfile>(profile);
   const [isDirty, setIsDirty] = useState(false);
@@ -87,7 +110,53 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setIsDirty(false);
   };
 
-  const hasDraftPrefs = (formData.gpa > 0 && Boolean(formData.major && formData.major.trim())) || formData.isConfigured === true;
+  // Progressive Profiling Checkpoints
+  const completionItems = [
+    {
+      id: 'basic',
+      name: 'Account & Name',
+      isComplete: Boolean(formData.fullName?.trim() && formData.fullName !== 'Guest Scholar'),
+      weight: 20,
+      description: 'Personalized identity in applications',
+    },
+    {
+      id: 'degree',
+      name: 'Degree Stage',
+      isComplete: Boolean(formData.educationLevel),
+      weight: 20,
+      description: 'Filters undergraduate vs graduate programs',
+    },
+    {
+      id: 'major',
+      name: 'Field of Study',
+      isComplete: Boolean(formData.major && formData.major.trim()),
+      weight: 20,
+      description: 'Unlocks +25% discipline matching criteria',
+    },
+    {
+      id: 'gpa',
+      name: 'Cumulative GPA',
+      isComplete: typeof formData.gpa === 'number' && formData.gpa > 0,
+      weight: 20,
+      description: 'Unlocks +35% merit threshold calculation',
+    },
+    {
+      id: 'country',
+      name: 'Destination Country',
+      isComplete: Boolean(formData.targetCountry && formData.targetCountry.trim()),
+      weight: 20,
+      description: 'Aligns bilateral grants and international awards',
+    },
+  ];
+
+  const profileCompletionPercentage = completionItems.reduce(
+    (acc, curr) => (curr.isComplete ? acc + curr.weight : acc),
+    0
+  );
+
+  const hasDraftPrefs =
+    (formData.gpa > 0 && Boolean(formData.major && formData.major.trim())) ||
+    formData.isConfigured === true;
 
   // Real-time recalculated preview scores with draft formData
   const simulatedMatches = hasDraftPrefs
@@ -102,7 +171,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const averageSimulatedMatch =
     simulatedMatches.length > 0
-      ? Math.round(simulatedMatches.reduce((acc, curr) => acc + curr.match.score, 0) / simulatedMatches.length)
+      ? Math.round(
+          simulatedMatches.reduce((acc, curr) => acc + curr.match.score, 0) /
+            simulatedMatches.length
+        )
       : 0;
 
   return (
@@ -110,11 +182,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-            Student Profile & Matching Engine
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+              Student Profile & Matching Engine
+            </h1>
+            <span
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                profileCompletionPercentage === 100
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  : 'bg-amber-100 text-amber-800 border border-amber-300'
+              }`}
+            >
+              {profileCompletionPercentage}% Complete
+            </span>
+          </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Configure your academic profile to power personalized match scores across scholarships and student loans.
+            Configure your academic profile to unlock personalized AI match scores across 5,000+ scholarships.
           </p>
         </div>
 
@@ -127,6 +210,80 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Re-sync Supabase</span>
           </button>
+
+          {onSignOut && (
+            <button
+              onClick={onSignOut}
+              className="px-3.5 py-2 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              title="Sign out of ScholarHub"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log Out</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Progressive Profiling Overview Card */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-5 sm:p-6 shadow-md border border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-700/80">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <h2 className="text-sm sm:text-base font-bold text-white">
+                {profileCompletionPercentage === 100
+                  ? 'AI Match Engine Fully Optimized'
+                  : 'Progressive Profiling: Unlock Accurate Match Scores'}
+              </h2>
+            </div>
+            <p className="text-xs text-slate-300 max-w-xl">
+              {profileCompletionPercentage === 100
+                ? 'Your full academic profile is active. Opportunities are dynamically ranked by GPA threshold, degree level, target country, and study field.'
+                : 'Complete the remaining preference checkpoints below to activate tailored eligibility calculations and 90%+ match scoring.'}
+            </p>
+          </div>
+
+          <div className="text-right shrink-0">
+            <div className="text-2xl font-black text-emerald-400">
+              {profileCompletionPercentage}%
+            </div>
+            <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+              Profile Strength
+            </div>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mt-4">
+          <div className="w-full bg-slate-700/80 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${profileCompletionPercentage}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Checkpoint Indicators */}
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+          {completionItems.map((item) => (
+            <div
+              key={item.id}
+              className={`p-2 rounded-xl border flex items-center gap-2 transition-all ${
+                item.isComplete
+                  ? 'bg-emerald-950/40 border-emerald-700/60 text-emerald-200'
+                  : 'bg-slate-800/60 border-slate-700/60 text-slate-400'
+              }`}
+            >
+              <div
+                className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
+                  item.isComplete ? 'bg-emerald-500 text-slate-950' : 'bg-slate-700 text-slate-400'
+                }`}
+              >
+                <Check className="w-2.5 h-2.5 stroke-[3]" />
+              </div>
+              <div className="truncate text-[11px] font-semibold">{item.name}</div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -149,7 +306,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     type="text"
                     value={formData.fullName}
                     onChange={(e) => handleChange('fullName', e.target.value)}
-                    placeholder="Enter your name (e.g. Jordan Smith)"
+                    placeholder="Enter your name (e.g. Kwame Mensah)"
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm font-medium text-slate-900"
                   />
                 </div>
@@ -172,7 +329,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             {/* Education Level Selector */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                Current Education Level
+                Current Degree / Education Level
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {(['High School', 'Undergraduate', 'Graduate', 'Doctorate'] as EducationLevel[]).map(
@@ -216,9 +373,34 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   ))}
                 </select>
                 <p className="text-[11px] text-slate-400">
-                  Select your primary degree path. Matches STEM, healthcare, and discipline-specific funding programs.
+                  Select your primary discipline. Unlocks discipline-specific STEM, healthcare, and humanitarian funding programs.
                 </p>
               </div>
+            </div>
+
+            {/* Target Destination Country of Study */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                Target Country of Study (Destination)
+              </label>
+              <div className="relative">
+                <Globe className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <select
+                  value={formData.targetCountry || ''}
+                  onChange={(e) => handleChange('targetCountry', e.target.value)}
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm font-medium text-slate-900 bg-white"
+                >
+                  <option value="">-- Select preferred destination country --</option>
+                  {TARGET_COUNTRIES.map((country) => (
+                    <option key={country} value={country}>
+                      {country}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Filter and align awards with regional bilateral grants (e.g. South Africa, Kenya, Nigeria, US, UK, Canada, Germany).
+              </p>
             </div>
 
             {/* Current GPA Slider & Numeric Input */}
@@ -229,7 +411,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     Cumulative GPA (4.0 Scale)
                   </label>
                   <p className="text-[11px] text-slate-500">
-                    Calculates eligibility for merit-based scholarships
+                    Required for merit-based scholarships and fellowship eligibility thresholds
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -258,9 +440,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   className="w-full accent-emerald-600 cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
-                  <span>2.0 (Min Standard)</span>
+                  <span>2.0 (Standard)</span>
                   <span>3.0 (B Average)</span>
-                  <span>3.5 (Dean's List)</span>
+                  <span>3.5 (Honors)</span>
                   <span>4.0 (Perfect)</span>
                 </div>
               </div>
@@ -269,13 +451,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             {/* Financial Need Status */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                Financial Need Status (FAFSA / Household Income)
+                Financial Need Status
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: 'High', label: 'High Need', desc: 'Pell Grant Eligible' },
-                  { id: 'Moderate', label: 'Moderate Need', desc: 'Partial Aid Recipient' },
-                  { id: 'Low', label: 'Low / Merit Only', desc: 'Non-Need Dependent' },
+                  { id: 'High', label: 'High Need', desc: 'Full Aid / Need-Based' },
+                  { id: 'Moderate', label: 'Moderate Need', desc: 'Partial Aid' },
+                  { id: 'Low', label: 'Low / Merit Only', desc: 'Merit Dependent' },
                 ].map((item) => {
                   const isSelected = formData.financialNeed === item.id;
                   return (
@@ -307,10 +489,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="p-3.5 rounded-xl border border-slate-200 bg-white flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold text-slate-800 block">
-                  First-Generation College Student
+                  First-Generation Higher Education Student
                 </span>
                 <span className="text-[11px] text-slate-500">
-                  First in immediate family to attend an accredited 4-year university
+                  First in your immediate family to attend university (matches equity fellowships)
                 </span>
               </div>
               <button
@@ -334,7 +516,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 {isDirty ? (
                   <span className="text-amber-600 font-medium">Unsaved changes will alter match %</span>
                 ) : (
-                  <span>All credentials synchronized</span>
+                  <span>Preferences saved & match engine ready</span>
                 )}
               </span>
 
@@ -363,7 +545,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              Here is how your current inputs match our catalog before saving:
+              Here is how your inputs score against our Supabase catalog before saving:
             </p>
 
             <div className="p-3.5 rounded-xl bg-slate-800/90 border border-slate-700/80 mb-4 flex items-center justify-between">
@@ -419,17 +601,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               onClick={onGoToExplore}
               className="mt-5 w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
             >
-              <span>View Explore Feed</span>
+              <span>Explore Matching Opportunities</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
           <div className="p-4 rounded-2xl bg-white border border-slate-200 text-xs text-slate-600 space-y-2">
             <h4 className="font-bold text-slate-900 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
               How ScholarHub Scores You
             </h4>
             <p className="text-[11px] text-slate-500 leading-relaxed">
-              Our algorithm weights GPA threshold fulfillment (35%), education stage (30%), field of study specialization (25%), and financial need criteria (10%).
+              Our algorithm weights GPA threshold fulfillment (35%), education stage (30%), field of study specialization (25%), and country alignment & financial need criteria (10%).
             </p>
           </div>
         </div>
