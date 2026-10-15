@@ -14,6 +14,9 @@ import {
   Globe2,
   ShieldCheck,
   TrendingUp,
+  Image as ImageIcon,
+  X,
+  Maximize2,
 } from 'lucide-react';
 import { AuthService, AuthSessionState } from '../services/authService';
 import campusBg from '../assets/images/african_university_campus_1792084597873.jpg';
@@ -31,6 +34,7 @@ export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,16 +80,26 @@ export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-hidden bg-slate-950 font-sans">
       {/* Background Image: Sunlit Modern African University Campus */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
-        style={{
-          backgroundImage: `url(${campusBg}), url('/images/african_university_campus.jpg')`,
-        }}
-      >
-        {/* Cinematic Gradient Overlays for readability and premium feel */}
-        <div className="absolute inset-0 bg-slate-950/75 mix-blend-multiply" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-900/50" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/70 to-emerald-950/30" />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <img
+          src={campusBg}
+          alt="African University Campus"
+          className="w-full h-full object-cover object-center scale-105 transition-transform duration-1000"
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (!target.dataset.triedPublic1) {
+              target.dataset.triedPublic1 = 'true';
+              target.src = '/assets/images/african_university_campus_1792084597873.jpg';
+            } else if (!target.dataset.triedPublic2) {
+              target.dataset.triedPublic2 = 'true';
+              target.src = '/assets/images/african_university_campus.jpg';
+            }
+          }}
+        />
+        {/* Balanced Cinematic Gradient Overlays: keeps university campus & students vivid while ensuring text readability */}
+        <div className="absolute inset-0 bg-slate-950/40 mix-blend-multiply" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-slate-900/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-transparent" />
       </div>
 
       {/* Main Container */}
@@ -331,6 +345,87 @@ export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
           </div>
         </div>
       </div>
+
+      {/* Floating button to view full background photograph */}
+      <button
+        type="button"
+        onClick={() => setShowPhotoModal(true)}
+        className="fixed bottom-4 left-4 z-20 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 text-xs backdrop-blur-md transition-all shadow-lg hover:shadow-emerald-950/20 group"
+        title="View full African campus photograph"
+      >
+        <ImageIcon className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+        <span className="font-medium">View Campus Photograph</span>
+        <Maximize2 className="w-3 h-3 text-slate-400 group-hover:text-white" />
+      </button>
+
+      {/* Full Photo Lightbox Modal */}
+      {showPhotoModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setShowPhotoModal(false)}
+        >
+          <div
+            className="relative max-w-5xl w-full max-h-[92vh] bg-slate-900 rounded-2xl overflow-hidden border border-white/15 shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-950/90 border-b border-white/10 text-white">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  <ImageIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">
+                    Modern African University Campus
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Collaborative scholars in golden sunlight at the modern university library
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPhotoModal(false)}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                aria-label="Close photo preview"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body / Image display */}
+            <div className="p-2 sm:p-4 overflow-auto flex items-center justify-center bg-black/60">
+              <img
+                src={campusBg}
+                alt="Modern African University Campus in golden sunlight"
+                className="w-full max-h-[72vh] object-contain rounded-xl shadow-lg border border-white/5"
+                onError={(e) => {
+                  e.currentTarget.src = '/assets/images/african_university_campus_1792084597873.jpg';
+                }}
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-4 py-3 bg-slate-950/90 border-t border-white/10 text-xs text-slate-300 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-slate-400">
+                Asset path:{' '}
+                <code className="text-emerald-400 font-mono text-[11px] bg-slate-800/80 px-2 py-0.5 rounded border border-white/5">
+                  src/assets/images/african_university_campus_1792084597873.jpg
+                </code>
+              </span>
+              <a
+                href={campusBg}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-colors"
+              >
+                <span>Open Raw Image</span>
+                <Maximize2 className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
