@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Opportunity, UserProfile, SavedApplication } from '../types';
 import { OpportunityCard } from './OpportunityCard';
-import { calculateMatchScore, formatDeadlineCountdown } from '../utils/matchingEngine';
+import { calculateMatchScore, formatDeadlineCountdown, hasUserPreferences } from '../utils/matchingEngine';
 import {
   Search,
   X,
@@ -27,7 +27,7 @@ interface ExploreViewProps {
 }
 
 type FilterPill = 'all' | 'due_soon' | 'no_essay' | 'high_award' | 'undergraduate' | 'graduate';
-type SortOption = 'match' | 'amount_desc' | 'deadline_soon' | 'gpa_asc';
+type SortOption = 'match' | 'amount_desc' | 'deadline_soon' | 'newest' | 'gpa_asc';
 
 export const ExploreView: React.FC<ExploreViewProps> = ({
   opportunities,
@@ -41,10 +41,13 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   onMatchClick,
   onGoToProfile,
 }) => {
+  const hasPrefs = hasUserPreferences(profile);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activePill, setActivePill] = useState<FilterPill>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<SortOption>('match');
+  // Default sorting to "Deadline (Soonest)" or "Newest" when no user profile is set
+  const [sortBy, setSortBy] = useState<SortOption>(() => (hasUserPreferences(profile) ? 'match' : 'deadline_soon'));
 
   // Compute set of saved opportunity IDs for instant lookup
   const savedOppIds = useMemo(() => {
@@ -60,35 +63,25 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
     }, 0);
   }, [opportunities]);
 
-  // Highest match score for the user's active preferences
+  // Highest match score for the user's active preferences (only evaluated when user has set preferences)
   const topMatchScore = useMemo(() => {
-    if (!opportunities || opportunities.length === 0) return 0;
+    if (!hasPrefs || !opportunities || opportunities.length === 0) return 0;
     const scores = opportunities
       .map((o) => calculateMatchScore(profile, o).score)
       .filter((s) => !isNaN(s));
     return scores.length > 0 ? Math.max(...scores) : 0;
-  }, [opportunities, profile]);
+  }, [hasPrefs, opportunities, profile]);
 
-  // Dynamic user greeting with graceful fallback
+  // Dynamic user greeting: gracefully treats unconfigured user as Guest
   const userGreetingName = useMemo(() => {
     const rawName = profile?.fullName?.trim();
-    if (!rawName) return 'Scholar';
+    if (!rawName) return 'Guest';
     const firstName = rawName.split(/\s+/)[0];
-    return firstName || 'Scholar';
+    return firstName || 'Guest';
   }, [profile?.fullName]);
-
-  // Dynamic field of study display
-  const userFieldOfStudy = useMemo(() => {
-    const rawMajor = profile?.major?.trim();
-    if (!rawMajor || rawMajor.toLowerCase() === 'all majors / undeclared') {
-      return 'your degree';
-    }
-    return `${rawMajor} degree`;
-  }, [profile?.major]);
 
   // Dynamic search placeholder safely guarded against any 'nan' concatenation bug
   const searchPlaceholder = useMemo(() => {
-    // If a specific opportunity type is selected
     if (selectedType && selectedType !== 'all') {
       const cleanType = String(selectedType).trim();
       const lowerType = cleanType.toLowerCase();
@@ -97,7 +90,6 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       }
     }
 
-    // If an instant filter pill is selected
     if (activePill && activePill !== 'all') {
       const pillMap: Record<string, string> = {
         due_soon: 'urgent opportunities',
@@ -112,7 +104,6 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       }
     }
 
-    // Default clean fallback without any possibility of "nan"
     return 'Search scholarships, grants, loans by name, field, or provider...';
   }, [selectedType, activePill]);
 
@@ -157,22 +148,29 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       })
       .sort((a, b) => {
         if (sortBy === 'match') {
+          if (!hasPrefs) {
+            // When no profile is set, fall back to deadline
+            return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+          }
           const scoreA = calculateMatchScore(profile, a).score;
           const scoreB = calculateMatchScore(profile, b).score;
           return scoreB - scoreA;
         }
-        if (sortBy === 'amount_desc') {
-          return b.amount - a.amount;
-        }
         if (sortBy === 'deadline_soon') {
           return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        }
+        if (sortBy === 'newest') {
+          return b.id.localeCompare(a.id);
+        }
+        if (sortBy === 'amount_desc') {
+          return b.amount - a.amount;
         }
         if (sortBy === 'gpa_asc') {
           return a.gpaRequirement - b.gpaRequirement;
         }
         return 0;
       });
-  }, [opportunities, searchQuery, activePill, selectedType, sortBy, profile]);
+  }, [opportunities, searchQuery, activePill, selectedType, sortBy, profile, hasPrefs]);
 
   return (
     <div className="space-y-6 w-full max-w-full">
@@ -186,7 +184,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/80 text-emerald-400 text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>AI Matching Engine Active</span>
+              <span>{hasPrefs ? 'AI Matching Engine Active' : 'Explore Mode'}</span>
             </div>
 
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/80 text-emerald-400 text-xs font-semibold">
@@ -202,9 +200,15 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           <p className="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed max-w-2xl">
             {isLoading ? (
               <span>Fetching verified opportunities live from Supabase...</span>
+            ) : hasPrefs ? (
+              <>
+                Loaded <strong className="text-white font-semibold">{opportunities.length} live {opportunities.length === 1 ? 'opportunity' : 'opportunities'}</strong> dynamically from our Supabase database for your{' '}
+                <strong className="text-emerald-300 font-semibold">{profile.major}</strong> degree.
+              </>
             ) : (
               <>
-                Loaded <strong className="text-white font-semibold">{opportunities.length} live {opportunities.length === 1 ? 'opportunity' : 'opportunities'}</strong> dynamically from our Supabase database for {userFieldOfStudy}.
+                Loaded <strong className="text-white font-semibold">{opportunities.length} live {opportunities.length === 1 ? 'opportunity' : 'opportunities'}</strong> dynamically from our Supabase database across{' '}
+                <strong className="text-emerald-300 font-semibold">all fields of study</strong>. Set your profile to find matches.
               </>
             )}
           </p>
@@ -226,14 +230,14 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-slate-400">Your Top Match:</span>
               <span className="font-extrabold text-emerald-400 text-base">
-                {isLoading ? '...' : `${topMatchScore}%`}
+                {isLoading ? '...' : hasPrefs && topMatchScore > 0 ? `${topMatchScore}%` : '--'}
               </span>
             </div>
             <button
               onClick={onGoToProfile}
               className="text-xs text-slate-300 hover:text-white underline underline-offset-4 font-medium transition-colors"
             >
-              Update Preferences
+              {hasPrefs ? 'Update Preferences' : 'Set Profile & Preferences'}
             </button>
           </div>
         </div>
@@ -329,9 +333,16 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               onChange={(e) => setSortBy(e.target.value as SortOption)}
               className="text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900"
             >
-              <option value="match">Highest Match %</option>
-              <option value="amount_desc">Largest Award</option>
               <option value="deadline_soon">Deadline (Soonest)</option>
+              <option value="newest">Newest Added</option>
+              {hasPrefs ? (
+                <option value="match">Highest Match %</option>
+              ) : (
+                <option value="match" disabled>
+                  Highest Match % (Set profile first)
+                </option>
+              )}
+              <option value="amount_desc">Largest Award</option>
               <option value="gpa_asc">Lowest GPA Requirement</option>
             </select>
           </div>

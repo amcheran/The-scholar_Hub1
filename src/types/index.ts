@@ -16,6 +16,7 @@ export interface UserProfile {
   financialNeed: FinancialNeedLevel;
   isFirstGen: boolean;
   citizenship: string;
+  isConfigured?: boolean;
 }
 
 export interface Opportunity {

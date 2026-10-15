@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Opportunity, UserProfile } from '../types';
-import { formatDeadlineCountdown } from '../utils/matchingEngine';
+import { formatDeadlineCountdown, hasUserPreferences } from '../utils/matchingEngine';
 import {
   X,
   ExternalLink,
@@ -113,8 +113,14 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
               <div className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5">
                 {opportunity.gpaRequirement.toFixed(1)} Cumulative
               </div>
-              <span className="text-[10px] text-emerald-600 font-semibold">
-                Your GPA: {profile.gpa.toFixed(2)}
+              <span
+                className={`text-[10px] font-semibold ${
+                  hasUserPreferences(profile) ? 'text-emerald-600' : 'text-slate-400'
+                }`}
+              >
+                {hasUserPreferences(profile)
+                  ? `Your GPA: ${profile.gpa.toFixed(2)}`
+                  : 'GPA: Not set in profile'}
               </span>
             </div>
           </div>

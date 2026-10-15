@@ -12,11 +12,14 @@ export class ScholarHubDatabase {
       const stored = localStorage.getItem(STORAGE_KEYS.PROFILE);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Clear any legacy hardcoded Alex mock profile so user sees clean dynamic profile
-        if (parsed.fullName === 'Alex Morgan') {
-          parsed.fullName = '';
-          parsed.email = '';
-          this.saveProfile(parsed);
+        // Clean any legacy hardcoded mock profiles from earlier versions
+        if (
+          parsed.fullName === 'Alex Morgan' ||
+          (parsed.major === 'Computer Science' && parsed.gpa === 3.75 && !parsed.isConfigured) ||
+          parsed.userId === 'usr_default_01'
+        ) {
+          this.saveProfile(INITIAL_USER_PROFILE);
+          return INITIAL_USER_PROFILE;
         }
         return parsed;
       }
@@ -39,7 +42,15 @@ export class ScholarHubDatabase {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.SAVED_APPLICATIONS);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed: SavedApplication[] = JSON.parse(stored);
+        // Remove legacy mock applications (e.g. app_saved_01, opp_google_tech_2026, etc.)
+        const valid = parsed.filter(
+          (app) => !app.id.startsWith('app_saved_0') && !app.opportunityId.startsWith('opp_')
+        );
+        if (valid.length !== parsed.length) {
+          this.saveApplications(valid);
+        }
+        return valid;
       }
     } catch {
       // fallback

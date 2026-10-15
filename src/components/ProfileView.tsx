@@ -79,18 +79,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSaveProfile(formData);
+    const configuredProfile: UserProfile = {
+      ...formData,
+      isConfigured: true,
+    };
+    onSaveProfile(configuredProfile);
     setIsDirty(false);
   };
 
+  const hasDraftPrefs = (formData.gpa > 0 && Boolean(formData.major && formData.major.trim())) || formData.isConfigured === true;
+
   // Real-time recalculated preview scores with draft formData
-  const simulatedMatches = opportunities
-    .map((opp) => ({
-      opp,
-      match: calculateMatchScore(formData, opp),
-    }))
-    .sort((a, b) => b.match.score - a.match.score)
-    .slice(0, 3);
+  const simulatedMatches = hasDraftPrefs
+    ? opportunities
+        .map((opp) => ({
+          opp,
+          match: calculateMatchScore(formData, opp),
+        }))
+        .sort((a, b) => b.match.score - a.match.score)
+        .slice(0, 3)
+    : [];
 
   const averageSimulatedMatch =
     simulatedMatches.length > 0
@@ -200,6 +208,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   onChange={(e) => handleChange('major', e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 text-sm font-medium text-slate-900 bg-white"
                 >
+                  <option value="">-- Select your field of study / major --</option>
                   {COMMON_MAJORS.map((m) => (
                     <option key={m} value={m}>
                       {m}
@@ -229,7 +238,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     step="0.01"
                     min="0.0"
                     max="4.0"
-                    value={formData.gpa}
+                    value={formData.gpa > 0 ? formData.gpa : ''}
+                    placeholder="0.00"
                     onChange={handleGpaNumberChange}
                     className="w-20 text-center font-extrabold text-lg text-emerald-600 bg-white border border-slate-300 rounded-lg py-1 px-2 focus:outline-none focus:ring-2 focus:ring-slate-900"
                   />
@@ -243,7 +253,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   min="2.0"
                   max="4.0"
                   step="0.05"
-                  value={formData.gpa}
+                  value={formData.gpa > 0 ? formData.gpa : 3.0}
                   onChange={(e) => handleChange('gpa', parseFloat(e.target.value))}
                   className="w-full accent-emerald-600 cursor-pointer"
                 />
@@ -359,42 +369,51 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="p-3.5 rounded-xl bg-slate-800/90 border border-slate-700/80 mb-4 flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-slate-400 block font-medium">Simulated Avg Match</span>
-                <span className="text-xl font-extrabold text-emerald-400">{averageSimulatedMatch}%</span>
+                <span className="text-xl font-extrabold text-emerald-400">
+                  {hasDraftPrefs && averageSimulatedMatch > 0 ? `${averageSimulatedMatch}%` : '--'}
+                </span>
               </div>
               <div className="text-right">
                 <span className="text-[11px] text-slate-400 block font-medium">Target Field</span>
                 <span className="text-xs font-bold text-white truncate max-w-[120px] block">
-                  {formData.major}
+                  {formData.major || 'All Fields'}
                 </span>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Top Compatible Programs
-              </div>
-              {simulatedMatches.map(({ opp, match }) => (
-                <div
-                  key={opp.id}
-                  className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between text-xs"
-                >
-                  <div className="min-w-0 pr-2">
-                    <div className="font-semibold text-white truncate max-w-[160px]">
-                      {opp.title}
-                    </div>
-                    <div className="text-[10px] text-emerald-400 font-bold">
-                      {opp.amountFormatted}
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="font-extrabold text-emerald-400 text-sm">
-                      {match.score}%
-                    </span>
-                    <span className="text-[10px] text-slate-400 block">Match</span>
-                  </div>
+            {hasDraftPrefs && simulatedMatches.length > 0 ? (
+              <div className="space-y-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Top Compatible Programs
                 </div>
-              ))}
-            </div>
+                {simulatedMatches.map(({ opp, match }) => (
+                  <div
+                    key={opp.id}
+                    className="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between text-xs"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="font-semibold text-white truncate max-w-[160px]">
+                        {opp.title}
+                      </div>
+                      <div className="text-[10px] text-emerald-400 font-bold">
+                        {opp.amountFormatted}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="font-extrabold text-emerald-400 text-sm">
+                        {match.score}%
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">Match</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 text-center text-xs text-slate-400 space-y-1">
+                <p className="font-semibold text-slate-300">No Preferences Set</p>
+                <p className="text-[11px]">Select your major and set your GPA above to view real-time match scores.</p>
+              </div>
+            )}
 
             <button
               onClick={onGoToExplore}

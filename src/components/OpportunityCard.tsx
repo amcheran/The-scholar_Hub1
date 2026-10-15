@@ -1,6 +1,6 @@
 import React from 'react';
 import { Opportunity, UserProfile } from '../types';
-import { calculateMatchScore, formatDeadlineCountdown } from '../utils/matchingEngine';
+import { calculateMatchScore, formatDeadlineCountdown, hasUserPreferences } from '../utils/matchingEngine';
 import { Bookmark, Clock, Sparkles, ChevronRight } from 'lucide-react';
 
 interface OpportunityCardProps {
@@ -20,12 +20,13 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
   onApplyClick,
   onMatchClick,
 }) => {
-  const matchData = calculateMatchScore(profile, opportunity);
+  const hasPrefs = hasUserPreferences(profile);
+  const matchData = hasPrefs ? calculateMatchScore(profile, opportunity) : null;
   const deadlineInfo = formatDeadlineCountdown(opportunity.deadline);
 
   // Match badge styling
   let matchBadgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-200/80';
-  if (matchData.score < 80) {
+  if (matchData && matchData.score < 80) {
     matchBadgeColor = 'bg-blue-50 text-blue-800 border-blue-200/80';
   }
 
@@ -53,15 +54,26 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
 
           {/* Grouped inline container with flex-shrink-0 for Match Badge & Bookmark Button */}
           <div className="inline-flex items-center gap-1.5 flex-shrink-0">
-            {/* Dynamic Match Score Badge */}
-            <button
-              onClick={() => onMatchClick(opportunity)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors hover:brightness-95 flex-shrink-0 ${matchBadgeColor}`}
-              title="Click to view match score calculation breakdown"
-            >
-              <Sparkles className="w-3 h-3 text-emerald-600 flex-shrink-0" />
-              <span className="whitespace-nowrap">{matchData.score}% Match</span>
-            </button>
+            {/* Dynamic Match Score Badge or Preferences Prompt */}
+            {hasPrefs && matchData ? (
+              <button
+                onClick={() => onMatchClick(opportunity)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors hover:brightness-95 flex-shrink-0 ${matchBadgeColor}`}
+                title="Click to view match score calculation breakdown"
+              >
+                <Sparkles className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                <span className="whitespace-nowrap">{matchData.score}% Match</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => onMatchClick(opportunity)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors flex-shrink-0"
+                title="Set your GPA and Major in your profile to calculate your match score"
+              >
+                <Sparkles className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                <span className="whitespace-nowrap">Set Preferences to Match</span>
+              </button>
+            )}
 
             {/* Bookmark button */}
             <button

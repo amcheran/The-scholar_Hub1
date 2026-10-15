@@ -158,11 +158,12 @@ function ScholarHubContent() {
 
   // Profile save & recalculate
   const handleSaveProfile = (newProfile: UserProfile) => {
-    ScholarHubDatabase.saveProfile(newProfile);
-    setProfile(newProfile);
+    const configured: UserProfile = { ...newProfile, isConfigured: true };
+    ScholarHubDatabase.saveProfile(configured);
+    setProfile(configured);
     showToast(
       'Profile Updated & Match Recalculated',
-      `All ${opportunities.length} opportunities rescored for GPA ${newProfile.gpa.toFixed(2)} and ${newProfile.major}.`,
+      `All ${opportunities.length} opportunities rescored for your ${configured.major || 'selected'} degree.`,
       'success'
     );
   };

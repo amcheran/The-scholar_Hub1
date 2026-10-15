@@ -110,14 +110,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               title="Manage matching attributes & GPA"
             >
               <div className="w-7 h-7 rounded-lg bg-slate-900 text-emerald-400 font-bold text-xs flex items-center justify-center">
-                {profile?.fullName?.trim() ? profile.fullName.trim()[0].toUpperCase() : 'S'}
+                {profile?.fullName?.trim() ? profile.fullName.trim()[0].toUpperCase() : 'G'}
               </div>
               <div className="text-left hidden lg:block">
                 <div className="text-xs font-semibold text-slate-900 leading-none truncate max-w-[100px]">
-                  {profile?.fullName?.trim() || 'Scholar'}
+                  {profile?.fullName?.trim() || 'Guest'}
                 </div>
                 <div className="text-[10px] text-emerald-700 font-medium mt-0.5">
-                  GPA: {typeof profile?.gpa === 'number' && !isNaN(profile.gpa) ? profile.gpa.toFixed(2) : '3.50'}
+                  {profile?.isConfigured && typeof profile?.gpa === 'number' && profile.gpa > 0
+                    ? `GPA: ${profile.gpa.toFixed(2)}`
+                    : 'Set Profile'}
                 </div>
               </div>
             </button>

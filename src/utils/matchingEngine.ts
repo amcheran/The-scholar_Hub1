@@ -1,6 +1,30 @@
 import { Opportunity, UserProfile, MatchScoreDetails } from '../types';
 
+export function hasUserPreferences(user: UserProfile | null | undefined): boolean {
+  if (!user) return false;
+  if (user.isConfigured === true) return true;
+  // Must have a positive GPA and an actual selected field of study
+  const hasGpa = typeof user.gpa === 'number' && user.gpa > 0;
+  const hasMajor = Boolean(user.major && user.major.trim());
+  return Boolean(hasGpa && hasMajor);
+}
+
 export function calculateMatchScore(user: UserProfile, opp: Opportunity): MatchScoreDetails {
+  if (!hasUserPreferences(user)) {
+    return {
+      score: 0,
+      grade: 'Fair',
+      breakdown: [
+        {
+          category: 'Profile Preferences Needed',
+          passed: false,
+          points: 0,
+          description: 'Set your cumulative GPA and field of study in your profile to compute your personalized match score.',
+        },
+      ],
+    };
+  }
+
   let totalScore = 0;
   const breakdown: MatchScoreDetails['breakdown'] = [];
 
