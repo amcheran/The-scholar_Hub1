@@ -33,10 +33,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               <GraduationCap className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-lg text-slate-900 tracking-tight">ScholarHub</span>
-                <span className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                  Aggregator
+              <div className="flex items-center">
+                <span className="font-extrabold text-lg sm:text-xl text-slate-900 tracking-tight">
+                  ScholarHub
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
@@ -89,49 +88,56 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </nav>
 
-          {/* Right Action: PWA Install, Saved Items counter button & Mini Profile */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Right Action: Sleek Dark-Mode Pill Controls (Saved, Avatar Profile, and Logout) */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             <PWAInstallButton variant="nav" />
 
+            {/* Saved Counter Pill */}
             <button
               onClick={() => onTabChange('tracker')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-medium transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors"
               title="View Tracker & Saved Applications"
             >
-              <Bookmark className="w-4 h-4 text-emerald-600" />
-              <span className="hidden sm:inline">Saved</span>
-              <span className="font-bold text-slate-900 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-xs">
+              <Bookmark className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden md:inline text-xs font-semibold">Saved</span>
+              <span className="font-bold text-slate-900 bg-white px-1.5 py-0.2 rounded-full border border-slate-200 text-[10px]">
                 {savedCount}
               </span>
             </button>
 
+            {/* Dark Pill: Avatar & Profile Indicator */}
             <button
               onClick={() => onTabChange('profile')}
-              className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors"
-              title="Manage matching attributes & GPA"
+              className="flex items-center gap-2 pl-1.5 pr-2 sm:pr-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white shadow-sm transition-all group"
+              title="View & Edit Profile"
             >
-              <div className="w-7 h-7 rounded-lg bg-slate-900 text-emerald-400 font-bold text-xs flex items-center justify-center">
-                {profile?.fullName?.trim() ? profile.fullName.trim()[0].toUpperCase() : 'G'}
-              </div>
-              <div className="text-left hidden lg:block">
-                <div className="text-xs font-semibold text-slate-900 leading-none truncate max-w-[100px]">
-                  {profile?.fullName?.trim() || 'Guest'}
+              <div className="relative">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 font-black text-xs flex items-center justify-center shadow-xs">
+                  {profile?.fullName?.trim() ? profile.fullName.trim()[0].toUpperCase() : 'S'}
                 </div>
-                <div className="text-[10px] text-emerald-700 font-medium mt-0.5">
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-slate-900" />
+              </div>
+              <div className="text-left hidden sm:block">
+                <div className="text-xs font-semibold text-slate-100 leading-none truncate max-w-[85px] group-hover:text-emerald-300 transition-colors">
+                  {profile?.fullName?.trim() || 'Scholar'}
+                </div>
+                <div className="text-[9px] text-emerald-400/90 font-medium tracking-wide mt-0.5">
                   {profile?.isConfigured && typeof profile?.gpa === 'number' && profile.gpa > 0
-                    ? `GPA: ${profile.gpa.toFixed(2)}`
-                    : 'Set Profile'}
+                    ? `GPA ${profile.gpa.toFixed(2)}`
+                    : 'Profile'}
                 </div>
               </div>
             </button>
 
+            {/* Dark Pill: [-> LOGOUT] Button */}
             {onSignOut && (
               <button
                 onClick={onSignOut}
-                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-slate-500 hover:text-rose-600 transition-colors"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 shadow-sm transition-all text-[11px] font-bold tracking-wider uppercase active:scale-95 group"
                 title="Sign out of ScholarHub"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-400 transition-colors" />
+                <span className="text-[10px] sm:text-[11px] font-bold tracking-wider">Logout</span>
               </button>
             )}
           </div>

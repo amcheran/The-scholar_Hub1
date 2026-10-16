@@ -11,6 +11,12 @@ import { AuthService, AuthSessionState } from './services/authService';
 import { ScholarHubDatabase } from './data/database';
 import { fetchOpportunitiesFromSupabase } from './services/opportunitiesService';
 import {
+  fetchSavedOpportunitiesFromSupabase,
+  saveOpportunityToSupabase,
+  removeOpportunityFromSupabase,
+  updateOpportunityStatusInSupabase,
+} from './services/savedOpportunitiesService';
+import {
   UserProfile,
   Opportunity,
   SavedApplication,
@@ -66,6 +72,46 @@ function ScholarHubContent() {
     loadOpportunities();
   }, [loadOpportunities]);
 
+  // Synchronize saved opportunities / bookmarks with Supabase for authenticated users
+  const syncSavedOpportunities = useCallback(async (userId: string) => {
+    try {
+      const sbSaved = await fetchSavedOpportunitiesFromSupabase(userId);
+      const localSaved = ScholarHubDatabase.getSavedApplications();
+
+      if (sbSaved && sbSaved.length > 0) {
+        // Merge Supabase saved opportunities with any local additions
+        const sbOppIds = new Set(sbSaved.map((s) => s.opportunityId));
+        const unsavedLocal = localSaved.filter((l) => !sbOppIds.has(l.opportunityId));
+
+        // If local has items not yet stored in Supabase, push them up to sync account
+        if (unsavedLocal.length > 0) {
+          for (const item of unsavedLocal) {
+            await saveOpportunityToSupabase(userId, item.opportunityId, item.status, item.notes);
+          }
+          const refreshed = await fetchSavedOpportunitiesFromSupabase(userId);
+          setSavedApplications(refreshed);
+          ScholarHubDatabase.saveApplications(refreshed);
+          return;
+        }
+
+        setSavedApplications(sbSaved);
+        ScholarHubDatabase.saveApplications(sbSaved);
+      } else if (localSaved.length > 0) {
+        // First-time sync: persist existing local bookmarks into Supabase
+        for (const item of localSaved) {
+          await saveOpportunityToSupabase(userId, item.opportunityId, item.status, item.notes);
+        }
+        const refreshed = await fetchSavedOpportunitiesFromSupabase(userId);
+        if (refreshed.length > 0) {
+          setSavedApplications(refreshed);
+          ScholarHubDatabase.saveApplications(refreshed);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to sync saved opportunities with Supabase:', err);
+    }
+  }, []);
+
   // Synchronize session on mount & subscribe to Supabase Auth state changes
   useEffect(() => {
     let isMounted = true;
@@ -74,6 +120,9 @@ function ScholarHubContent() {
       if (isMounted) {
         setAuthSession(session);
         setProfile(ScholarHubDatabase.getProfile());
+        if (session.isAuthenticated && session.user?.id) {
+          syncSavedOpportunities(session.user.id);
+        }
       }
     });
 
@@ -81,6 +130,9 @@ function ScholarHubContent() {
       if (isMounted) {
         setAuthSession(state);
         setProfile(ScholarHubDatabase.getProfile());
+        if (state.isAuthenticated && state.user?.id) {
+          syncSavedOpportunities(state.user.id);
+        }
       }
     });
 
@@ -88,7 +140,7 @@ function ScholarHubContent() {
       isMounted = false;
       authListener?.subscription?.unsubscribe?.();
     };
-  }, []);
+  }, [syncSavedOpportunities]);
 
   const handleSignOut = async () => {
     await AuthService.signOut();
@@ -110,8 +162,8 @@ function ScholarHubContent() {
     });
   };
 
-  // Toggle Save/Bookmark from Explore Card
-  const handleToggleSave = (opportunityId: string) => {
+  // Toggle Save/Bookmark from Explore Card (synced with Supabase)
+  const handleToggleSave = async (opportunityId: string) => {
     const opp = opportunities.find((o) => o.id === opportunityId);
     const title = opp ? opp.title : 'Opportunity';
 
@@ -119,6 +171,11 @@ function ScholarHubContent() {
       ScholarHubDatabase.removeByOpportunityId(opportunityId);
       setSavedApplications(ScholarHubDatabase.getSavedApplications());
       showToast('Removed from Tracker', `Removed "${title}" from your applications.`, 'info');
+
+      // Persist removal in Supabase if authenticated
+      if (authSession.isAuthenticated && authSession.user?.id) {
+        await removeOpportunityFromSupabase(authSession.user.id, opportunityId);
+      }
     } else {
       ScholarHubDatabase.addOrSaveApplication(opportunityId, 'Saved');
       setSavedApplications(ScholarHubDatabase.getSavedApplications());
@@ -127,11 +184,16 @@ function ScholarHubContent() {
         `Added "${title}" under your Saved tab.`,
         'success'
       );
+
+      // Persist addition in Supabase if authenticated
+      if (authSession.isAuthenticated && authSession.user?.id) {
+        await saveOpportunityToSupabase(authSession.user.id, opportunityId, 'Saved');
+      }
     }
   };
 
-  // Direct Apply modal tracking action
-  const handleTrackApplication = (opportunityId: string, status: 'In Progress') => {
+  // Direct Apply modal tracking action (synced with Supabase)
+  const handleTrackApplication = async (opportunityId: string, status: 'In Progress') => {
     const opp = opportunities.find((o) => o.id === opportunityId);
     const title = opp ? opp.title : 'Opportunity';
 
@@ -142,10 +204,14 @@ function ScholarHubContent() {
       `"${title}" is now active in your Tracker with initial checklist.`,
       'success'
     );
+
+    if (authSession.isAuthenticated && authSession.user?.id) {
+      await saveOpportunityToSupabase(authSession.user.id, opportunityId, status);
+    }
   };
 
-  // Tracker status dropdown change
-  const handleUpdateStatus = (appId: string, status: ApplicationStatus) => {
+  // Tracker status dropdown change (synced with Supabase)
+  const handleUpdateStatus = async (appId: string, status: ApplicationStatus) => {
     const updated = ScholarHubDatabase.updateApplicationStatus(appId, status);
     if (updated) {
       setSavedApplications(ScholarHubDatabase.getSavedApplications());
@@ -154,6 +220,10 @@ function ScholarHubContent() {
         `Moved to "${status}" column in your Tracker.`,
         'success'
       );
+
+      if (authSession.isAuthenticated && authSession.user?.id) {
+        await updateOpportunityStatusInSupabase(authSession.user.id, updated.opportunityId, status);
+      }
     }
   };
 
@@ -177,20 +247,29 @@ function ScholarHubContent() {
   };
 
   // Notes update
-  const handleUpdateNotes = (appId: string, notes: string) => {
+  const handleUpdateNotes = async (appId: string, notes: string) => {
     const updated = ScholarHubDatabase.updateNotes(appId, notes);
     if (updated) {
       setSavedApplications(ScholarHubDatabase.getSavedApplications());
       showToast('Notes Saved', 'Personal application notes updated successfully.', 'info');
+
+      if (authSession.isAuthenticated && authSession.user?.id) {
+        await updateOpportunityStatusInSupabase(authSession.user.id, updated.opportunityId, updated.status, notes);
+      }
     }
   };
 
-  // Tracker delete
-  const handleRemoveApplication = (appId: string) => {
+  // Tracker delete (synced with Supabase)
+  const handleRemoveApplication = async (appId: string) => {
+    const app = savedApplications.find((a) => a.id === appId);
     const removed = ScholarHubDatabase.removeApplication(appId);
     if (removed) {
       setSavedApplications(ScholarHubDatabase.getSavedApplications());
       showToast('Application Removed', 'Item removed from your tracker.', 'info');
+
+      if (authSession.isAuthenticated && authSession.user?.id && app) {
+        await removeOpportunityFromSupabase(authSession.user.id, app.opportunityId);
+      }
     }
   };
 
@@ -228,11 +307,14 @@ function ScholarHubContent() {
         onAuthenticated={(newSession) => {
           setAuthSession(newSession);
           setProfile(ScholarHubDatabase.getProfile());
+          if (newSession.isAuthenticated && newSession.user?.id) {
+            syncSavedOpportunities(newSession.user.id);
+          }
           showToast(
             newSession.isGuest ? 'Welcome to ScholarHub' : 'Welcome back!',
             newSession.isGuest
               ? 'Entered preview mode. Complete your profile preferences to unlock personalized match scores.'
-              : 'Signed in successfully. Your session will remain active across app reloads.',
+              : 'Signed in successfully. Your session and saved opportunities are permanently synced to your account.',
             'success'
           );
         }}
