@@ -7,8 +7,9 @@ import { ApplyModal } from './components/ApplyModal';
 import { MatchBreakdownModal } from './components/MatchBreakdownModal';
 import { ToastProvider, useToast } from './components/Toast';
 import { AuthWall } from './components/AuthWall';
+import { supabase } from './lib/supabase';
 import { AuthService, AuthSessionState } from './services/authService';
-import { ScholarHubDatabase } from './data/database';
+import { ProfileService, DEFAULT_EMPTY_PROFILE } from './services/profileService';
 import { fetchOpportunitiesFromSupabase } from './services/opportunitiesService';
 import {
   fetchSavedOpportunitiesFromSupabase,
@@ -29,16 +30,14 @@ function ScholarHubContent() {
   const { showToast } = useToast();
   const [, startTransition] = useTransition();
 
-  // Persistent Auth Session State (Auto-Login via Supabase & localStorage)
+  // Persistent Auth Session State
   const [authSession, setAuthSession] = useState<AuthSessionState>(() =>
     AuthService.getStoredSession()
   );
 
-  // Core reactive database state
-  const [profile, setProfile] = useState<UserProfile>(() => ScholarHubDatabase.getProfile());
-  const [savedApplications, setSavedApplications] = useState<SavedApplication[]>(() =>
-    ScholarHubDatabase.getSavedApplications()
-  );
+  // Live Supabase Database state: Profile & Saved Applications
+  const [profile, setProfile] = useState<UserProfile>(DEFAULT_EMPTY_PROFILE);
+  const [savedApplications, setSavedApplications] = useState<SavedApplication[]>([]);
 
   // Dynamic opportunities fetched exclusively from Supabase
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
@@ -72,43 +71,23 @@ function ScholarHubContent() {
     loadOpportunities();
   }, [loadOpportunities]);
 
-  // Synchronize saved opportunities / bookmarks with Supabase for authenticated users
-  const syncSavedOpportunities = useCallback(async (userId: string) => {
+  // Load live user data (profile & saved opportunities) directly from Supabase
+  const loadUserDataFromSupabase = useCallback(async (userId: string) => {
+    if (!userId) return;
     try {
-      const sbSaved = await fetchSavedOpportunitiesFromSupabase(userId);
-      const localSaved = ScholarHubDatabase.getSavedApplications();
+      const [liveProfile, liveSaved] = await Promise.all([
+        ProfileService.fetchUserProfile(userId),
+        fetchSavedOpportunitiesFromSupabase(userId),
+      ]);
 
-      if (sbSaved && sbSaved.length > 0) {
-        // Merge Supabase saved opportunities with any local additions
-        const sbOppIds = new Set(sbSaved.map((s) => s.opportunityId));
-        const unsavedLocal = localSaved.filter((l) => !sbOppIds.has(l.opportunityId));
-
-        // If local has items not yet stored in Supabase, push them up to sync account
-        if (unsavedLocal.length > 0) {
-          for (const item of unsavedLocal) {
-            await saveOpportunityToSupabase(userId, item.opportunityId, item.status, item.notes);
-          }
-          const refreshed = await fetchSavedOpportunitiesFromSupabase(userId);
-          setSavedApplications(refreshed);
-          ScholarHubDatabase.saveApplications(refreshed);
-          return;
-        }
-
-        setSavedApplications(sbSaved);
-        ScholarHubDatabase.saveApplications(sbSaved);
-      } else if (localSaved.length > 0) {
-        // First-time sync: persist existing local bookmarks into Supabase
-        for (const item of localSaved) {
-          await saveOpportunityToSupabase(userId, item.opportunityId, item.status, item.notes);
-        }
-        const refreshed = await fetchSavedOpportunitiesFromSupabase(userId);
-        if (refreshed.length > 0) {
-          setSavedApplications(refreshed);
-          ScholarHubDatabase.saveApplications(refreshed);
-        }
+      if (liveProfile) {
+        setProfile(liveProfile);
+      }
+      if (Array.isArray(liveSaved)) {
+        setSavedApplications(liveSaved);
       }
     } catch (err) {
-      console.warn('Failed to sync saved opportunities with Supabase:', err);
+      console.warn('Error loading user data from Supabase:', err);
     }
   }, []);
 
@@ -116,23 +95,32 @@ function ScholarHubContent() {
   useEffect(() => {
     let isMounted = true;
 
-    AuthService.checkCurrentSession().then((session) => {
-      if (isMounted) {
-        setAuthSession(session);
-        setProfile(ScholarHubDatabase.getProfile());
-        if (session.isAuthenticated && session.user?.id) {
-          syncSavedOpportunities(session.user.id);
-        }
+    // 1. Initial check on mount
+    AuthService.checkCurrentSession().then(async (session) => {
+      if (!isMounted) return;
+      setAuthSession(session);
+      if (session.isAuthenticated && session.user?.id) {
+        await loadUserDataFromSupabase(session.user.id);
+      } else if (session.isGuest) {
+        setProfile({
+          ...DEFAULT_EMPTY_PROFILE,
+          userId: 'guest_user',
+          fullName: 'Guest Scholar',
+        });
       }
     });
 
-    const { data: authListener } = AuthService.onAuthStateChange((state) => {
-      if (isMounted) {
-        setAuthSession(state);
-        setProfile(ScholarHubDatabase.getProfile());
-        if (state.isAuthenticated && state.user?.id) {
-          syncSavedOpportunities(state.user.id);
-        }
+    // 2. Real-time auth state subscription (signs in, signs out, or registers)
+    const { data: authListener } = AuthService.onAuthStateChange(async (state) => {
+      if (!isMounted) return;
+      setAuthSession(state);
+
+      if (state.isAuthenticated && state.user?.id) {
+        await loadUserDataFromSupabase(state.user.id);
+      } else if (!state.isAuthenticated && !state.isGuest) {
+        // Immediate clean reset on sign-out
+        setProfile(DEFAULT_EMPTY_PROFILE);
+        setSavedApplications([]);
       }
     });
 
@@ -140,13 +128,14 @@ function ScholarHubContent() {
       isMounted = false;
       authListener?.subscription?.unsubscribe?.();
     };
-  }, [syncSavedOpportunities]);
+  }, [loadUserDataFromSupabase]);
 
   const handleSignOut = async () => {
     await AuthService.signOut();
     setAuthSession({ isAuthenticated: false, isGuest: false, user: null });
-    setProfile(ScholarHubDatabase.getProfile());
-    showToast('Signed Out', 'You have been safely signed out. Sessions are cleared.', 'info');
+    setProfile(DEFAULT_EMPTY_PROFILE);
+    setSavedApplications([]);
+    showToast('Signed Out', 'You have been safely signed out. Session and records cleared.', 'info');
   };
 
   // Quick lookup set of tracked opportunity IDs
@@ -162,138 +151,303 @@ function ScholarHubContent() {
     });
   };
 
-  // Toggle Save/Bookmark from Explore Card (synced with Supabase)
+  // Toggle Save/Bookmark from Explore Card (executes actual Supabase mutation on saved_applications table)
   const handleToggleSave = async (opportunityId: string) => {
     const opp = opportunities.find((o) => o.id === opportunityId);
     const title = opp ? opp.title : 'Opportunity';
 
-    if (trackedOppIdSet.has(opportunityId)) {
-      ScholarHubDatabase.removeByOpportunityId(opportunityId);
-      setSavedApplications(ScholarHubDatabase.getSavedApplications());
-      showToast('Removed from Tracker', `Removed "${title}" from your applications.`, 'info');
-
-      // Persist removal in Supabase if authenticated
-      if (authSession.isAuthenticated && authSession.user?.id) {
-        await removeOpportunityFromSupabase(authSession.user.id, opportunityId);
+    // 1. Resolve live authenticated Supabase user
+    let currentUser: { id: string; email?: string } | null = null;
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.warn('[handleToggleSave] getUser() check:', authError.message);
       }
+      if (authData?.user) {
+        currentUser = authData.user;
+      } else {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.warn('[handleToggleSave] getSession() check:', sessionError.message);
+        }
+        if (sessionData?.session?.user) {
+          currentUser = sessionData.session.user;
+        }
+      }
+    } catch (err) {
+      console.warn('[handleToggleSave] Error verifying Supabase auth session:', err);
+    }
+
+    // Fallback: If authSession state has a valid UUID user
+    if (!currentUser && authSession.user?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(authSession.user.id)) {
+      currentUser = { id: authSession.user.id, email: authSession.user.email };
+    }
+
+    // If user is not authenticated with Supabase, prompt login
+    if (!currentUser) {
+      console.warn('[handleToggleSave] Action blocked: User is not authenticated in Supabase.');
+      showToast(
+        'Sign In Required',
+        'Please sign in or create an account to save scholarships to your Supabase database.',
+        'warning'
+      );
+      setAuthSession({ isAuthenticated: false, isGuest: false, user: null });
+      return;
+    }
+
+    const isCurrentlySaved = trackedOppIdSet.has(opportunityId);
+
+    if (isCurrentlySaved) {
+      // 2. Execute actual Supabase DELETE mutation
+      console.log(`[handleToggleSave] Executing DELETE on saved_applications (user_id: ${currentUser.id}, opportunity_id: ${opportunityId})`);
+      const removeResult = await removeOpportunityFromSupabase(currentUser.id, opportunityId);
+
+      // Check for Supabase errors and log them explicitly
+      if (!removeResult.success) {
+        console.error('[handleToggleSave] Supabase DELETE error on saved_applications:', removeResult.error);
+        showToast(
+          'Failed to Remove Bookmark',
+          removeResult.error || 'Database delete mutation failed on saved_applications.',
+          'error'
+        );
+        return;
+      }
+
+      // 3. Fetch live records from saved_applications so the counter matches live rows
+      const liveSaved = await fetchSavedOpportunitiesFromSupabase(currentUser.id);
+      setSavedApplications(liveSaved);
+      showToast('Removed from Tracker', `Removed "${title}" from your saved scholarships (${liveSaved.length} saved).`, 'info');
     } else {
-      ScholarHubDatabase.addOrSaveApplication(opportunityId, 'Saved');
-      setSavedApplications(ScholarHubDatabase.getSavedApplications());
+      // 2. Execute actual Supabase INSERT mutation using schema columns (user_id, opportunity_id)
+      console.log(`[handleToggleSave] Executing INSERT on saved_applications (user_id: ${currentUser.id}, opportunity_id: ${opportunityId})`);
+      const saveResult = await saveOpportunityToSupabase(currentUser.id, opportunityId);
+
+      // Check for Supabase errors and log them explicitly
+      if (!saveResult.success) {
+        console.error('[handleToggleSave] Supabase INSERT error on saved_applications:', saveResult.error);
+        showToast(
+          'Failed to Save Bookmark',
+          saveResult.error || 'Database insert mutation failed on saved_applications.',
+          'error'
+        );
+        return;
+      }
+
+      // 3. Fetch live records from saved_applications so the counter matches live rows
+      const liveSaved = await fetchSavedOpportunitiesFromSupabase(currentUser.id);
+      setSavedApplications(liveSaved);
       showToast(
         'Saved to Application Tracker',
-        `Added "${title}" under your Saved tab.`,
+        `Added "${title}" under your Saved tab (${liveSaved.length} total saved).`,
         'success'
       );
-
-      // Persist addition in Supabase if authenticated
-      if (authSession.isAuthenticated && authSession.user?.id) {
-        await saveOpportunityToSupabase(authSession.user.id, opportunityId, 'Saved');
-      }
     }
   };
 
-  // Direct Apply modal tracking action (synced with Supabase)
-  const handleTrackApplication = async (opportunityId: string, status: 'In Progress') => {
+  // Direct Apply modal tracking action (executes actual Supabase mutation on saved_applications)
+  const handleTrackApplication = async (opportunityId: string, _status: 'In Progress') => {
     const opp = opportunities.find((o) => o.id === opportunityId);
     const title = opp ? opp.title : 'Opportunity';
 
-    ScholarHubDatabase.addOrSaveApplication(opportunityId, status);
-    setSavedApplications(ScholarHubDatabase.getSavedApplications());
+    let currentUser: { id: string; email?: string } | null = null;
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user) {
+        currentUser = authData.user;
+      } else {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.user) {
+          currentUser = sessionData.session.user;
+        }
+      }
+    } catch (e) {
+      console.warn('[handleTrackApplication] Session lookup error:', e);
+    }
+
+    if (!currentUser && authSession.user?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(authSession.user.id)) {
+      currentUser = { id: authSession.user.id, email: authSession.user.email };
+    }
+
+    if (!currentUser) {
+      console.warn('[handleTrackApplication] User not authenticated in Supabase.');
+      showToast('Sign In Required', 'Please sign in or create an account to track applications.', 'warning');
+      setAuthSession({ isAuthenticated: false, isGuest: false, user: null });
+      return;
+    }
+
+    const saveResult = await saveOpportunityToSupabase(currentUser.id, opportunityId);
+    if (!saveResult.success) {
+      console.error('[handleTrackApplication] Supabase tracking save failed:', saveResult.error);
+      showToast('Database Error', saveResult.error || 'Failed to update tracking in Supabase.', 'error');
+      return;
+    }
+
+    const liveSaved = await fetchSavedOpportunitiesFromSupabase(currentUser.id);
+    setSavedApplications(liveSaved);
     showToast(
       'Added to In-Progress Pipeline',
-      `"${title}" is now active in your Tracker with initial checklist.`,
+      `"${title}" is now active in your Tracker with initial checklist (${liveSaved.length} total).`,
+      'success'
+    );
+  };
+
+  // Tracker status change (persists to Supabase public.saved_applications)
+  const handleUpdateStatus = async (appId: string, status: ApplicationStatus) => {
+    const app = savedApplications.find((a) => a.id === appId);
+    if (!app) return;
+    const userId = authSession.user?.id;
+
+    setSavedApplications((prev) =>
+      prev.map((a) =>
+        a.id === appId
+          ? {
+              ...a,
+              status,
+              progress: status === 'Submitted' ? 100 : status === 'In Progress' ? Math.max(a.progress, 33) : a.progress,
+              updatedAt: new Date().toISOString(),
+            }
+          : a
+      )
+    );
+    showToast(
+      'Application Status Updated',
+      `Moved to "${status}" column in your Tracker.`,
       'success'
     );
 
-    if (authSession.isAuthenticated && authSession.user?.id) {
-      await saveOpportunityToSupabase(authSession.user.id, opportunityId, status);
+    if (userId) {
+      await updateOpportunityStatusInSupabase(userId, app.opportunityId, status, app.notes);
+      const refreshed = await fetchSavedOpportunitiesFromSupabase(userId);
+      setSavedApplications(refreshed);
     }
   };
 
-  // Tracker status dropdown change (synced with Supabase)
-  const handleUpdateStatus = async (appId: string, status: ApplicationStatus) => {
-    const updated = ScholarHubDatabase.updateApplicationStatus(appId, status);
-    if (updated) {
-      setSavedApplications(ScholarHubDatabase.getSavedApplications());
-      showToast(
-        'Application Status Updated',
-        `Moved to "${status}" column in your Tracker.`,
-        'success'
-      );
+  // Tracker progress slider change
+  const handleUpdateProgress = async (appId: string, progress: number) => {
+    const app = savedApplications.find((a) => a.id === appId);
+    if (!app) return;
+    const userId = authSession.user?.id;
 
-      if (authSession.isAuthenticated && authSession.user?.id) {
-        await updateOpportunityStatusInSupabase(authSession.user.id, updated.opportunityId, status);
-      }
+    let derivedStatus = app.status;
+    if (progress === 100) derivedStatus = 'Submitted';
+    else if (progress > 0 && derivedStatus === 'Saved') derivedStatus = 'In Progress';
+    else if (progress === 0 && derivedStatus === 'In Progress') derivedStatus = 'Saved';
+
+    setSavedApplications((prev) =>
+      prev.map((a) =>
+        a.id === appId
+          ? {
+              ...a,
+              progress,
+              status: derivedStatus,
+              updatedAt: new Date().toISOString(),
+            }
+          : a
+      )
+    );
+
+    if (progress === 100) {
+      showToast('Application Complete!', '100% progress achieved. Marked as Submitted.', 'success');
     }
-  };
 
-  // Tracker progress slider / buttons change
-  const handleUpdateProgress = (appId: string, progress: number) => {
-    const updated = ScholarHubDatabase.updateApplicationProgress(appId, progress);
-    if (updated) {
-      setSavedApplications(ScholarHubDatabase.getSavedApplications());
-      if (progress === 100) {
-        showToast('Application Complete!', '100% progress achieved. Marked as Submitted.', 'success');
-      }
+    if (userId) {
+      await updateOpportunityStatusInSupabase(userId, app.opportunityId, derivedStatus, app.notes);
     }
   };
 
   // Step checklist toggle
   const handleToggleStep = (appId: string, stepId: string) => {
-    const updated = ScholarHubDatabase.toggleStep(appId, stepId);
-    if (updated) {
-      setSavedApplications(ScholarHubDatabase.getSavedApplications());
-    }
-  };
+    setSavedApplications((prev) =>
+      prev.map((a) => {
+        if (a.id !== appId) return a;
+        const updatedSteps = a.steps.map((s) => (s.id === stepId ? { ...s, done: !s.done } : s));
+        const completedCount = updatedSteps.filter((s) => s.done).length;
+        const progressPercent = Math.round((completedCount / updatedSteps.length) * 100);
+        let status = a.status;
+        if (progressPercent === 100) status = 'Submitted';
+        else if (progressPercent > 0 && status === 'Saved') status = 'In Progress';
 
-  // Notes update
-  const handleUpdateNotes = async (appId: string, notes: string) => {
-    const updated = ScholarHubDatabase.updateNotes(appId, notes);
-    if (updated) {
-      setSavedApplications(ScholarHubDatabase.getSavedApplications());
-      showToast('Notes Saved', 'Personal application notes updated successfully.', 'info');
-
-      if (authSession.isAuthenticated && authSession.user?.id) {
-        await updateOpportunityStatusInSupabase(authSession.user.id, updated.opportunityId, updated.status, notes);
-      }
-    }
-  };
-
-  // Tracker delete (synced with Supabase)
-  const handleRemoveApplication = async (appId: string) => {
-    const app = savedApplications.find((a) => a.id === appId);
-    const removed = ScholarHubDatabase.removeApplication(appId);
-    if (removed) {
-      setSavedApplications(ScholarHubDatabase.getSavedApplications());
-      showToast('Application Removed', 'Item removed from your tracker.', 'info');
-
-      if (authSession.isAuthenticated && authSession.user?.id && app) {
-        await removeOpportunityFromSupabase(authSession.user.id, app.opportunityId);
-      }
-    }
-  };
-
-  // Profile save & recalculate
-  const handleSaveProfile = (newProfile: UserProfile) => {
-    const configured: UserProfile = { ...newProfile, isConfigured: true };
-    ScholarHubDatabase.saveProfile(configured);
-    setProfile(configured);
-    showToast(
-      'Profile Updated & Match Recalculated',
-      `All ${opportunities.length} opportunities rescored for your ${configured.major || 'selected'} degree.`,
-      'success'
+        return {
+          ...a,
+          steps: updatedSteps,
+          progress: progressPercent,
+          status,
+          updatedAt: new Date().toISOString(),
+        };
+      })
     );
   };
 
-  // Reset database & re-sync from Supabase
+  // Notes update (persists to Supabase public.saved_applications)
+  const handleUpdateNotes = async (appId: string, notes: string) => {
+    const app = savedApplications.find((a) => a.id === appId);
+    if (!app) return;
+    const userId = authSession.user?.id;
+
+    setSavedApplications((prev) =>
+      prev.map((a) => (a.id === appId ? { ...a, notes, updatedAt: new Date().toISOString() } : a))
+    );
+    showToast('Notes Saved', 'Personal application notes updated successfully.', 'info');
+
+    if (userId) {
+      await updateOpportunityStatusInSupabase(userId, app.opportunityId, app.status, notes);
+    }
+  };
+
+  // Tracker delete (executes actual Supabase DELETE on saved_applications)
+  const handleRemoveApplication = async (appId: string) => {
+    const app = savedApplications.find((a) => a.id === appId);
+    if (!app) return;
+
+    const { data: authData } = await supabase.auth.getUser();
+    const currentUser = authData?.user;
+    if (!currentUser) return;
+
+    console.log(`[handleRemoveApplication] Executing DELETE on saved_applications (user_id: ${currentUser.id}, opportunity_id: ${app.opportunityId})`);
+    const removeResult = await removeOpportunityFromSupabase(currentUser.id, app.opportunityId);
+
+    if (!removeResult.success) {
+      console.error('[handleRemoveApplication] Supabase DELETE error:', removeResult.error);
+      showToast('Failed to Remove', removeResult.error || 'Database delete failed.', 'error');
+      return;
+    }
+
+    const liveSaved = await fetchSavedOpportunitiesFromSupabase(currentUser.id);
+    setSavedApplications(liveSaved);
+    showToast('Application Removed', 'Item removed from your database tracker.', 'info');
+  };
+
+  // Profile save: Persists directly into live Supabase public.profiles table using supabase.auth.getUser()
+  const handleSaveProfile = async (newProfile: UserProfile) => {
+    const configured: UserProfile = { ...newProfile, isConfigured: true };
+
+    const saveResult = await ProfileService.saveUserProfile(configured);
+    if (saveResult.success && saveResult.data) {
+      setProfile(saveResult.data);
+      showToast(
+        'Profile Saved to Supabase',
+        `Live profile preferences updated in Supabase public.profiles. Opportunities rescored for your ${saveResult.data.major || 'selected'} field.`,
+        'success'
+      );
+    } else {
+      setProfile(configured);
+      showToast(
+        saveResult.error ? 'Saved with Warning' : 'Profile Updated',
+        saveResult.error || 'Profile preferences updated.',
+        saveResult.error ? 'info' : 'success'
+      );
+    }
+  };
+
+  // Reset database: re-queries live Supabase opportunities and user profile
   const handleResetDatabase = async () => {
-    ScholarHubDatabase.resetDatabase();
-    setProfile(ScholarHubDatabase.getProfile());
-    setSavedApplications(ScholarHubDatabase.getSavedApplications());
     await loadOpportunities();
+    if (authSession.isAuthenticated && authSession.user?.id) {
+      await loadUserDataFromSupabase(authSession.user.id);
+    }
     showToast(
       'Supabase Database Re-synced',
-      'Refetched live opportunities dynamically from Supabase.',
+      'Refetched live opportunities, profile, and saved applications directly from Supabase.',
       'info'
     );
   };
@@ -304,17 +458,22 @@ function ScholarHubContent() {
   if (!authSession.isAuthenticated) {
     return (
       <AuthWall
-        onAuthenticated={(newSession) => {
+        onAuthenticated={async (newSession) => {
           setAuthSession(newSession);
-          setProfile(ScholarHubDatabase.getProfile());
           if (newSession.isAuthenticated && newSession.user?.id) {
-            syncSavedOpportunities(newSession.user.id);
+            await loadUserDataFromSupabase(newSession.user.id);
+          } else if (newSession.isGuest) {
+            setProfile({
+              ...DEFAULT_EMPTY_PROFILE,
+              userId: 'guest_user',
+              fullName: 'Guest Scholar',
+            });
           }
           showToast(
             newSession.isGuest ? 'Welcome to ScholarHub' : 'Welcome back!',
             newSession.isGuest
               ? 'Entered preview mode. Complete your profile preferences to unlock personalized match scores.'
-              : 'Signed in successfully. Your session and saved opportunities are permanently synced to your account.',
+              : 'Signed in successfully. Your profile and bookmarks are synced live with Supabase.',
             'success'
           );
         }}

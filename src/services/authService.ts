@@ -1,7 +1,7 @@
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types';
-import { ScholarHubDatabase } from '../data/database';
+import { ProfileService } from './profileService';
 
 export interface AuthSessionState {
   isAuthenticated: boolean;
@@ -280,29 +280,16 @@ export class AuthService {
   }
 
   /**
-   * Synchronize active auth user info into local user profile
+   * Synchronize active auth user info into Supabase public.profiles
    */
-  private static syncUserProfileWithAuth(
+  private static async syncUserProfileWithAuth(
     user: { id: string; email: string; fullName: string },
-    isGuest: boolean = false
-  ): void {
+    _isGuest: boolean = false
+  ): Promise<void> {
     try {
-      const currentProfile = ScholarHubDatabase.getProfile();
-      const updated: UserProfile = {
-        ...currentProfile,
-        userId: user.id,
-        email: user.email,
-        fullName: currentProfile.fullName && currentProfile.fullName !== 'Guest Scholar'
-          ? currentProfile.fullName
-          : user.fullName,
-        isConfigured: currentProfile.isConfigured || false,
-      };
-      if (isGuest && !currentProfile.isConfigured) {
-        updated.fullName = 'Guest Scholar';
-      }
-      ScholarHubDatabase.saveProfile(updated);
+      await ProfileService.fetchUserProfile(user.id);
     } catch (e) {
-      console.error('Error syncing profile with auth:', e);
+      console.warn('Error syncing profile with Supabase public.profiles:', e);
     }
   }
 }

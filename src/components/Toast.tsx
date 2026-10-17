@@ -3,7 +3,7 @@ import { ToastMessage } from '../types';
 import { CheckCircle2, Info, AlertCircle, X } from 'lucide-react';
 
 interface ToastContextType {
-  showToast: (title: string, message?: string, type?: 'success' | 'info' | 'warning') => void;
+  showToast: (title: string, message?: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -11,7 +11,7 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const showToast = useCallback((title: string, message?: string, type: 'success' | 'info' | 'warning' = 'success') => {
+  const showToast = useCallback((title: string, message?: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
     const id = `toast_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
     const newToast: ToastMessage = { id, title, message, type };
 
@@ -19,7 +19,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3800);
+    }, 4200);
   }, []);
 
   const removeToast = (id: string) => {
@@ -41,6 +41,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           } else if (toast.type === 'warning') {
             icon = <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />;
             border = 'border-amber-200 bg-amber-50/95 text-amber-900';
+          } else if (toast.type === 'error') {
+            icon = <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />;
+            border = 'border-rose-200 bg-rose-50/95 text-rose-900';
           }
 
           return (
