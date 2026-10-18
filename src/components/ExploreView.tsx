@@ -7,7 +7,7 @@ import {
   X,
   Sparkles,
   ArrowUpDown,
-  Database,
+  ShieldCheck,
   RefreshCw,
   AlertCircle,
   Loader2,
@@ -190,8 +190,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/80 text-emerald-400 text-xs font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <Database className="w-3 h-3 text-emerald-400" />
-              <span>Live Supabase Database</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Verified Funding</span>
             </div>
           </div>
 
@@ -200,16 +200,16 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           </h1>
           <p className="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed max-w-2xl">
             {isLoading ? (
-              <span>Fetching verified opportunities live from Supabase...</span>
+              <span>Discovering verified scholarship and funding opportunities...</span>
             ) : hasPrefs ? (
               <>
-                Loaded <strong className="text-white font-semibold">{opportunities.length} live {opportunities.length === 1 ? 'opportunity' : 'opportunities'}</strong> dynamically from our Supabase database for your{' '}
+                Explore <strong className="text-white font-semibold">{opportunities.length} verified {opportunities.length === 1 ? 'opportunity' : 'opportunities'}</strong> tailored for your{' '}
                 <strong className="text-emerald-300 font-semibold">{profile.major}</strong> degree.
               </>
             ) : (
               <>
-                Loaded <strong className="text-white font-semibold">{opportunities.length} live {opportunities.length === 1 ? 'opportunity' : 'opportunities'}</strong> dynamically from our Supabase database across{' '}
-                <strong className="text-emerald-300 font-semibold">all fields of study</strong>. Set your profile to find matches.
+                Explore <strong className="text-white font-semibold">{opportunities.length} verified scholarship and loan {opportunities.length === 1 ? 'opportunity' : 'opportunities'}</strong> across{' '}
+                <strong className="text-emerald-300 font-semibold">all fields of study</strong>. Set your profile preferences to see tailored match scores.
               </>
             )}
           </p>
@@ -382,12 +382,12 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           {isLoading ? (
             <span className="flex items-center gap-1.5">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
-              Loading Supabase opportunities...
+              Loading verified opportunities...
             </span>
           ) : (
             <>
               Showing <span className="text-slate-900 font-bold">{filteredOpportunities.length}</span>{' '}
-              {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'} (from Supabase)
+              {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
             </>
           )}
         </div>
@@ -409,7 +409,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center max-w-lg mx-auto">
           <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
-          <h3 className="font-bold text-red-900 text-sm">Failed to load Supabase opportunities</h3>
+          <h3 className="font-bold text-red-900 text-sm">Unable to load opportunities</h3>
           <p className="text-xs text-red-700 mt-1 mb-4">{error}</p>
           {onRetry && (
             <button
@@ -417,7 +417,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-2"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Retry Connection</span>
+              <span>Retry</span>
             </button>
           )}
         </div>
@@ -479,7 +479,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           <p className="text-xs text-slate-500 mt-1 mb-4 leading-relaxed">
             {searchQuery || activePill !== 'all' || selectedType !== 'all'
               ? 'No matching listings found for your current filter criteria.'
-              : 'The Supabase database currently has no records matching this query.'}
+              : 'No scholarship or loan opportunities currently match your search.'}
           </p>
           {(searchQuery || activePill !== 'all' || selectedType !== 'all') && (
             <button

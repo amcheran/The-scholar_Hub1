@@ -51,7 +51,7 @@ export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
         );
         if (confirmationRequired) {
           setInfoMessage(
-            'Account created! If a confirmation email is enabled in Supabase, please verify your email. Logging you in now...'
+            'Account created! Please check your email inbox if verification is requested. Signing you in now...'
           );
         }
         onAuthenticated(state);
@@ -149,9 +149,9 @@ export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
               </div>
             </div>
             <div className="p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
-              <div className="text-lg sm:text-xl font-black text-teal-300">Live</div>
+              <div className="text-lg sm:text-xl font-black text-teal-300">Active</div>
               <div className="text-[11px] text-slate-300 font-medium leading-tight mt-0.5">
-                Supabase Sync
+                Deadline Tracking
               </div>
             </div>
             <div className="p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">

@@ -188,7 +188,7 @@ function ScholarHubContent() {
       console.warn('[handleToggleSave] Action blocked: User is not authenticated in Supabase.');
       showToast(
         'Sign In Required',
-        'Please sign in or create an account to save scholarships to your Supabase database.',
+        'Please sign in or create an account to bookmark scholarships.',
         'warning'
       );
       setAuthSession({ isAuthenticated: false, isGuest: false, user: null });
@@ -206,8 +206,8 @@ function ScholarHubContent() {
       if (!removeResult.success) {
         console.error('[handleToggleSave] Supabase DELETE error on saved_applications:', removeResult.error);
         showToast(
-          'Failed to Remove Bookmark',
-          removeResult.error || 'Database delete mutation failed on saved_applications.',
+          'Unable to Remove Bookmark',
+          removeResult.error || 'Failed to remove scholarship from saved list.',
           'error'
         );
         return;
@@ -226,8 +226,8 @@ function ScholarHubContent() {
       if (!saveResult.success) {
         console.error('[handleToggleSave] Supabase INSERT error on saved_applications:', saveResult.error);
         showToast(
-          'Failed to Save Bookmark',
-          saveResult.error || 'Database insert mutation failed on saved_applications.',
+          'Unable to Save Bookmark',
+          saveResult.error || 'Failed to save scholarship. Please try again.',
           'error'
         );
         return;
@@ -237,8 +237,8 @@ function ScholarHubContent() {
       const liveSaved = await fetchSavedOpportunitiesFromSupabase(currentUser.id);
       setSavedApplications(liveSaved);
       showToast(
-        'Saved to Application Tracker',
-        `Added "${title}" under your Saved tab (${liveSaved.length} total saved).`,
+        'Saved to Tracker',
+        `Added "${title}" to your saved scholarships (${liveSaved.length} total saved).`,
         'success'
       );
     }
@@ -278,15 +278,15 @@ function ScholarHubContent() {
     const saveResult = await saveOpportunityToSupabase(currentUser.id, opportunityId);
     if (!saveResult.success) {
       console.error('[handleTrackApplication] Supabase tracking save failed:', saveResult.error);
-      showToast('Database Error', saveResult.error || 'Failed to update tracking in Supabase.', 'error');
+      showToast('Unable to Track', saveResult.error || 'Failed to add application to tracker.', 'error');
       return;
     }
 
     const liveSaved = await fetchSavedOpportunitiesFromSupabase(currentUser.id);
     setSavedApplications(liveSaved);
     showToast(
-      'Added to In-Progress Pipeline',
-      `"${title}" is now active in your Tracker with initial checklist (${liveSaved.length} total).`,
+      'Added to Tracker',
+      `"${title}" is now active in your application tracker (${liveSaved.length} total saved).`,
       'success'
     );
   };
@@ -414,7 +414,7 @@ function ScholarHubContent() {
 
     const liveSaved = await fetchSavedOpportunitiesFromSupabase(currentUser.id);
     setSavedApplications(liveSaved);
-    showToast('Application Removed', 'Item removed from your database tracker.', 'info');
+    showToast('Application Removed', 'Opportunity removed from your saved tracker.', 'info');
   };
 
   // Profile save: Persists directly into live Supabase public.profiles table using supabase.auth.getUser()
@@ -425,8 +425,8 @@ function ScholarHubContent() {
     if (saveResult.success && saveResult.data) {
       setProfile(saveResult.data);
       showToast(
-        'Profile Saved to Supabase',
-        `Live profile preferences updated in Supabase public.profiles. Opportunities rescored for your ${saveResult.data.major || 'selected'} field.`,
+        'Profile Saved',
+        `Preferences updated. Scholarship matches rescored for your ${saveResult.data.major || 'selected'} field.`,
         'success'
       );
     } else {
@@ -446,8 +446,8 @@ function ScholarHubContent() {
       await loadUserDataFromSupabase(authSession.user.id);
     }
     showToast(
-      'Supabase Database Re-synced',
-      'Refetched live opportunities, profile, and saved applications directly from Supabase.',
+      'Listings Refreshed',
+      'Latest scholarship opportunities and saved tracker items have been refreshed.',
       'info'
     );
   };
@@ -473,7 +473,7 @@ function ScholarHubContent() {
             newSession.isGuest ? 'Welcome to ScholarHub' : 'Welcome back!',
             newSession.isGuest
               ? 'Entered preview mode. Complete your profile preferences to unlock personalized match scores.'
-              : 'Signed in successfully. Your profile and bookmarks are synced live with Supabase.',
+              : 'Signed in successfully. Your saved scholarships and profile preferences are ready.',
             'success'
           );
         }}

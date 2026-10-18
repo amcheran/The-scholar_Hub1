@@ -205,10 +205,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <button
             onClick={onResetDatabase}
             className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-            title="Re-sync data directly from Supabase"
+            title="Refresh latest scholarship listings"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Re-sync Supabase</span>
+            <span>Refresh Data</span>
           </button>
 
           {onSignOut && (
@@ -545,7 +545,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              Here is how your inputs score against our Supabase catalog before saving:
+              Here is how your inputs score against our scholarship catalog before saving:
             </p>
 
             <div className="p-3.5 rounded-xl bg-slate-800/90 border border-slate-700/80 mb-4 flex items-center justify-between">

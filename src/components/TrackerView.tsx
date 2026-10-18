@@ -149,7 +149,7 @@ export const TrackerView: React.FC<TrackerViewProps> = ({
 
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs">
           <div className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-            In-Progress Pipeline
+            In-Progress Applications
           </div>
           <div className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1 tracking-tight">
             {counts['In Progress']} Applications
