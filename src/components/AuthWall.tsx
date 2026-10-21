@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   GraduationCap,
-  Sparkles,
   Mail,
   Lock,
   User,
@@ -333,7 +332,7 @@ export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
                 disabled={isLoading}
                 className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 border border-slate-200 transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <Compass className="w-4 h-4 text-emerald-600" />
                 <span>Explore as Guest / Instant Preview</span>
               </button>
             </div>

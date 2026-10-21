@@ -1,17 +1,26 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Opportunity, UserProfile, SavedApplication } from '../types';
 import { OpportunityCard } from './OpportunityCard';
 import { calculateMatchScore, formatDeadlineCountdown, hasUserPreferences } from '../utils/matchingEngine';
+import campusBg from '../assets/images/african_university_campus_1792084597873.jpg';
 import {
   Search,
   X,
-  Sparkles,
   ArrowUpDown,
   ShieldCheck,
   RefreshCw,
   AlertCircle,
   Loader2,
   ArrowRight,
+  GraduationCap,
+  Award,
+  Megaphone,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  Building2,
+  CheckCircle2,
+  Send,
 } from 'lucide-react';
 
 interface ExploreViewProps {
@@ -43,6 +52,26 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   onGoToProfile,
 }) => {
   const hasPrefs = hasUserPreferences(profile);
+
+  // Carousel & Sponsor Modal state
+  const [currentSlide, setCurrentSlide] = useState<number>(0);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [showPartnerModal, setShowPartnerModal] = useState<boolean>(false);
+  const [partnerSubmitted, setPartnerSubmitted] = useState<boolean>(false);
+  const [partnerOrg, setPartnerOrg] = useState<string>('');
+  const [partnerName, setPartnerName] = useState<string>('');
+  const [partnerEmail, setPartnerEmail] = useState<string>('');
+  const [partnerAwardType, setPartnerAwardType] = useState<string>('Scholarship');
+  const [partnerDetails, setPartnerDetails] = useState<string>('');
+
+  // Auto-play timer for carousel with pause-on-hover (6 seconds per slide)
+  useEffect(() => {
+    if (isPaused || showPartnerModal) return;
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % 3);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [isPaused, showPartnerModal]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activePill, setActivePill] = useState<FilterPill>('all');
@@ -175,72 +204,250 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
 
   return (
     <div className="space-y-6 w-full max-w-full">
-      {/* Welcome Greeting Banner */}
-      <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-md relative overflow-hidden">
-        {/* Subtle decorative background pattern */}
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-20 -mb-10 w-48 h-48 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/80 text-emerald-400 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>{hasPrefs ? 'AI Matching Engine Active' : 'Explore Mode'}</span>
+      {/* Hero Carousel Banner (3 interactive slides with African campus background & advertising option) */}
+      <div
+        className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-800/80 bg-slate-950 text-white min-h-[340px] sm:min-h-[300px] flex flex-col justify-between"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        {/* Slide 0: Personalized Student Opportunities (Image-backed with African University Campus) */}
+        {currentSlide === 0 && (
+          <div className="relative p-6 sm:p-8 flex-1 flex flex-col justify-between z-10 animate-in fade-in duration-300">
+            {/* Campus Background Image with dark cinematic overlay */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
+              <img
+                src={campusBg}
+                alt="African University Campus"
+                className="w-full h-full object-cover object-center scale-105 transition-transform duration-700"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.dataset.triedFallback) {
+                    target.dataset.triedFallback = 'true';
+                    target.src = '/assets/images/african_university_campus_1792084597873.jpg';
+                  }
+                }}
+              />
+              <div className="absolute inset-0 bg-slate-950/75 mix-blend-multiply" />
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/85 to-slate-950/50" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/40" />
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800/80 text-emerald-400 text-xs font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Verified Funding</span>
-            </div>
-          </div>
+            <div className="max-w-2xl relative z-10">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/85 border border-emerald-700/70 text-emerald-300 text-xs font-semibold backdrop-blur-xs">
+                  <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{hasPrefs ? 'Academic Recommendations Active' : 'Student Opportunity Discovery'}</span>
+                </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
-            Welcome back, {userGreetingName}
-          </h1>
-          <p className="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed max-w-2xl">
-            {isLoading ? (
-              <span>Discovering verified scholarship and funding opportunities...</span>
-            ) : hasPrefs ? (
-              <>
-                Explore <strong className="text-white font-semibold">{opportunities.length} verified {opportunities.length === 1 ? 'opportunity' : 'opportunities'}</strong> tailored for your{' '}
-                <strong className="text-emerald-300 font-semibold">{profile.major}</strong> degree.
-              </>
-            ) : (
-              <>
-                Explore <strong className="text-white font-semibold">{opportunities.length} verified scholarship and loan {opportunities.length === 1 ? 'opportunity' : 'opportunities'}</strong> across{' '}
-                <strong className="text-emerald-300 font-semibold">all fields of study</strong>. Set your profile preferences to see tailored match scores.
-              </>
-            )}
-          </p>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900/85 border border-slate-700/80 text-emerald-400 text-xs font-semibold backdrop-blur-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Verified Funding</span>
+                </div>
+              </div>
 
-          {/* Quick Metrics Strip */}
-          <div className="mt-6 pt-5 border-t border-slate-800 flex flex-wrap items-center gap-6 text-xs sm:text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-slate-400">Total Program Funding:</span>
-              <span className="font-extrabold text-emerald-400 text-base">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+                Welcome back, {userGreetingName}
+              </h1>
+
+              <p className="text-slate-200 text-sm sm:text-base mt-2 leading-relaxed max-w-xl">
                 {isLoading ? (
-                  <span className="text-slate-400 font-normal">Loading...</span>
-                ) : totalFunding > 0 ? (
-                  `$${totalFunding.toLocaleString()}`
+                  <span>Discovering verified scholarship and funding opportunities...</span>
+                ) : hasPrefs ? (
+                  <>
+                    Explore <strong className="text-white font-semibold">{opportunities.length} verified {opportunities.length === 1 ? 'opportunity' : 'opportunities'}</strong> tailored for your{' '}
+                    <strong className="text-emerald-300 font-semibold">{profile.major}</strong> degree path.
+                  </>
                 ) : (
-                  'Tuition & Living'
+                  <>
+                    Explore <strong className="text-white font-semibold">{opportunities.length} verified scholarship and loan {opportunities.length === 1 ? 'opportunity' : 'opportunities'}</strong> across{' '}
+                    <strong className="text-emerald-300 font-semibold">all fields of study</strong>. Set your profile preferences to view tailored recommendations.
+                  </>
                 )}
-              </span>
+              </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-slate-400">Your Top Match:</span>
-              <span className="font-extrabold text-emerald-400 text-base">
-                {isLoading ? '...' : hasPrefs && topMatchScore > 0 ? `${topMatchScore}%` : '--'}
-              </span>
+
+            {/* Quick Metrics Strip */}
+            <div className="mt-6 pt-4 border-t border-white/15 flex flex-wrap items-center gap-6 text-xs sm:text-sm relative z-10">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-300">Total Program Funding:</span>
+                <span className="font-extrabold text-emerald-400 text-base">
+                  {isLoading ? (
+                    <span className="text-slate-400 font-normal">Loading...</span>
+                  ) : totalFunding > 0 ? (
+                    `$${totalFunding.toLocaleString()}`
+                  ) : (
+                    'Tuition & Living'
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-300">Your Top Match:</span>
+                <span className="font-extrabold text-emerald-400 text-base">
+                  {isLoading ? '...' : hasPrefs && topMatchScore > 0 ? `${topMatchScore}%` : '--'}
+                </span>
+              </div>
+              <button
+                onClick={onGoToProfile}
+                className="text-xs text-emerald-300 hover:text-white underline underline-offset-4 font-semibold transition-colors"
+              >
+                {hasPrefs ? 'Update Preferences' : 'Set Profile & Preferences'}
+              </button>
             </div>
-            <button
-              onClick={onGoToProfile}
-              className="text-xs text-slate-300 hover:text-white underline underline-offset-4 font-medium transition-colors"
-            >
-              {hasPrefs ? 'Update Preferences' : 'Set Profile & Preferences'}
-            </button>
           </div>
+        )}
+
+        {/* Slide 1: Featured & Sponsored Scholarship Spotlight */}
+        {currentSlide === 1 && (
+          <div className="relative p-6 sm:p-8 flex-1 flex flex-col justify-between z-10 animate-in fade-in duration-300 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950">
+            {/* Ambient decorative lighting */}
+            <div className="absolute top-0 right-0 -mr-10 -mt-10 w-72 h-72 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 right-1/3 -mb-10 w-60 h-60 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
+
+            <div className="max-w-2xl relative z-10">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-semibold backdrop-blur-xs">
+                  <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  <span>Featured Program Spotlight</span>
+                </div>
+
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-700/60 text-emerald-300 text-xs font-semibold">
+                  <Award className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Sponsored Full-Ride Grants</span>
+                </div>
+              </div>
+
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+                Pan-African & Global STEM Fellowships 2025/2026
+              </h2>
+
+              <p className="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed max-w-xl">
+                High-value undergraduate and postgraduate awards offering full tuition coverage, living allowances up to $30,000, and academic mentorship for African scholars.
+              </p>
+            </div>
+
+            {/* Quick Action & Criteria Pills */}
+            <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center gap-3 relative z-10">
+              <button
+                onClick={() => {
+                  setActivePill('high_award');
+                  const el = document.getElementById('catalog-search-bar');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-xs transition-colors"
+              >
+                <span>View $5,000+ High-Award Programs</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                  Open to All African Nationalities
+                </span>
+                <span className="hidden sm:inline-block px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                  Zero Application Fee
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Slide 2: Partner With ScholarHub / Sponsor or Advertise a Program */}
+        {currentSlide === 2 && (
+          <div className="relative p-6 sm:p-8 flex-1 flex flex-col justify-between z-10 animate-in fade-in duration-300 bg-gradient-to-br from-slate-900 via-teal-950 to-slate-950">
+            {/* Ambient decorative lighting */}
+            <div className="absolute top-0 right-10 -mt-10 w-64 h-64 rounded-full bg-teal-500/15 blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 right-0 -mb-10 w-64 h-64 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none" />
+
+            <div className="max-w-2xl relative z-10">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 text-xs font-semibold backdrop-blur-xs">
+                  <Megaphone className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Sponsor & Partner Opportunities</span>
+                </div>
+
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700/80 text-teal-300 text-xs font-semibold">
+                  <Building2 className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Universities & Foundations</span>
+                </div>
+              </div>
+
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+                Advertise or Sponsor a Scholarship Program
+              </h2>
+
+              <p className="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed max-w-xl">
+                Are you an educational institution, endowment trust, or foundation? Feature your funding programs directly to thousands of qualified, ambitious African students.
+              </p>
+            </div>
+
+            {/* Quick Action Strip */}
+            <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center gap-3 relative z-10">
+              <button
+                onClick={() => setShowPartnerModal(true)}
+                className="px-4 py-2 rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-xs transition-colors"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Feature Your Program / Partner With Us</span>
+              </button>
+              <a
+                href="mailto:partnerships@scholarhub.org?subject=Scholarship%20Sponsorship%20Inquiry"
+                className="text-xs text-slate-300 hover:text-white underline underline-offset-4 font-medium transition-colors"
+              >
+                Contact: partnerships@scholarhub.org
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Carousel Controls: Three Pagination Dots in the Bottom Corner + Prev/Next Buttons */}
+        <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-20 flex items-center gap-2">
+          {/* Previous Arrow */}
+          <button
+            type="button"
+            onClick={() => setCurrentSlide((prev) => (prev === 0 ? 2 : prev - 1))}
+            className="w-7 h-7 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {/* Exactly 3 Pagination Dots */}
+          <div className="flex items-center gap-1.5 bg-slate-950/80 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-white/15">
+            {[0, 1, 2].map((idx) => {
+              const isActive = currentSlide === idx;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setCurrentSlide(idx)}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    isActive
+                      ? 'w-6 bg-emerald-400'
+                      : 'w-2 bg-white/40 hover:bg-white/70'
+                  }`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                  title={
+                    idx === 0
+                      ? 'Tailored Opportunities'
+                      : idx === 1
+                      ? 'Featured & Sponsored Programs'
+                      : 'Sponsor & Partner Opportunities'
+                  }
+                />
+              );
+            })}
+          </div>
+
+          {/* Next Arrow */}
+          <button
+            type="button"
+            onClick={() => setCurrentSlide((prev) => (prev === 2 ? 0 : prev + 1))}
+            className="w-7 h-7 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -249,11 +456,11 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
         <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border border-emerald-200/80 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
           <div className="flex items-start gap-3">
             <div className="p-2.5 rounded-xl bg-emerald-600 text-white shrink-0 mt-0.5 shadow-xs">
-              <Sparkles className="w-5 h-5" />
+              <GraduationCap className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900">
-                Unlock Accurate AI Scholarship Matches
+                Unlock Personalized Scholarship Matches
               </h3>
               <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
                 You are currently in guest exploration mode. Set your GPA, degree level, and destination country to unlock real-time match scores and tailored recommendations.
@@ -271,7 +478,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       )}
 
       {/* Search & Instant Filter Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
+      <div id="catalog-search-bar" className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
         {/* Search Input */}
         <div className="relative">
           <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -493,6 +700,159 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               Reset Filters
             </button>
           )}
+        </div>
+      )}
+
+      {/* Sponsor / Partner Inquiry Modal */}
+      {showPartnerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative">
+            <button
+              type="button"
+              onClick={() => {
+                setShowPartnerModal(false);
+                setPartnerSubmitted(false);
+              }}
+              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              aria-label="Close dialog"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {partnerSubmitted ? (
+              <div className="text-center py-6 space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900">Sponsorship Inquiry Received!</h3>
+                <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+                  Thank you for supporting African scholars. Our institutional partnerships team will review your scholarship program details and reach out within 24 hours.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPartnerModal(false);
+                    setPartnerSubmitted(false);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors"
+                >
+                  Return to Explore
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setPartnerSubmitted(true);
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-bold mb-2">
+                    <Building2 className="w-3.5 h-3.5 text-teal-600" />
+                    <span>Scholarship Provider Portal</span>
+                  </div>
+                  <h3 className="text-lg font-extrabold text-slate-900">
+                    Feature Your Scholarship on ScholarHub
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Connect your scholarship, fellowship, or student grant with thousands of qualified, high-achieving African scholars.
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Organization / University / Foundation Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={partnerOrg}
+                      onChange={(e) => setPartnerOrg(e.target.value)}
+                      placeholder="e.g. Beit Trust / University of Cape Town"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Contact Name
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={partnerName}
+                        onChange={(e) => setPartnerName(e.target.value)}
+                        placeholder="e.g. Dr. Jane Mwangi"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Institutional Email
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={partnerEmail}
+                        onChange={(e) => setPartnerEmail(e.target.value)}
+                        placeholder="partnerships@institution.org"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Program Type
+                    </label>
+                    <select
+                      value={partnerAwardType}
+                      onChange={(e) => setPartnerAwardType(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                    >
+                      <option value="Scholarship">Merit / Need-Based Scholarship</option>
+                      <option value="Fellowship">Postgraduate / Research Fellowship</option>
+                      <option value="Grant">Undergraduate / Community Grant</option>
+                      <option value="Loan">Low-Interest Educational Loan</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Brief Program Details or Website Link
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={partnerDetails}
+                      onChange={(e) => setPartnerDetails(e.target.value)}
+                      placeholder="e.g. Annual full-ride award for 20 STEM undergraduate students from Sub-Saharan Africa..."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPartnerModal(false)}
+                    className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-colors"
+                  >
+                    <Send className="w-3.5 h-3.5 text-teal-400" />
+                    <span>Submit Inquiry</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       )}
     </div>

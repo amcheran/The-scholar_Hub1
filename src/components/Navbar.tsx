@@ -9,7 +9,6 @@ import {
   X,
   ChevronRight,
   Bookmark,
-  Sparkles,
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -397,8 +396,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Quick PWA Info / Features Pill */}
           <div className="mt-4 p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/60 text-emerald-900">
             <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span className="text-xs font-bold">Smart Matching Active</span>
+              <GraduationCap className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="text-xs font-bold">Academic Recommendations Active</span>
             </div>
             <p className="text-[11px] text-emerald-800 leading-relaxed">
               ScholarHub scores verified international & local African university opportunities against your profile.

@@ -9,7 +9,7 @@ import { calculateMatchScore } from '../utils/matchingEngine';
 import {
   User,
   GraduationCap,
-  Sparkles,
+  Target,
   Save,
   RotateCcw,
   CheckCircle2,
@@ -184,7 +184,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-              Student Profile & Matching Engine
+              Student Profile & Academic Preferences
             </h1>
             <span
               className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
@@ -197,7 +197,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Configure your academic profile to unlock personalized AI match scores across 5,000+ scholarships.
+            Configure your academic profile to unlock personalized scholarship recommendations across 5,000+ verified opportunities.
           </p>
         </div>
 
@@ -229,11 +229,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-700/80">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <h2 className="text-sm sm:text-base font-bold text-white">
                 {profileCompletionPercentage === 100
-                  ? 'AI Match Engine Fully Optimized'
-                  : 'Progressive Profiling: Unlock Accurate Match Scores'}
+                  ? 'Academic Profile Complete'
+                  : 'Profile Preferences: Unlock Personalized Matches'}
               </h2>
             </div>
             <p className="text-xs text-slate-300 max-w-xl">
@@ -516,7 +516,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 {isDirty ? (
                   <span className="text-amber-600 font-medium">Unsaved changes will alter match %</span>
                 ) : (
-                  <span>Preferences saved & match engine ready</span>
+                  <span>Preferences saved & recommendations updated</span>
                 )}
               </span>
 
@@ -525,7 +525,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm transition-all"
               >
                 <Save className="w-4 h-4 text-emerald-400" />
-                <span>Save & Recalculate Matches</span>
+                <span>Save & Update Recommendations</span>
               </button>
             </div>
           </form>
@@ -536,8 +536,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-sm relative overflow-hidden">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-sm font-bold tracking-tight">Live Match Simulator</h3>
+                <Target className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-bold tracking-tight">Academic Match Preview</h3>
               </div>
               <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60">
                 Real-Time
@@ -612,7 +612,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               How ScholarHub Scores You
             </h4>
             <p className="text-[11px] text-slate-500 leading-relaxed">
-              Our algorithm weights GPA threshold fulfillment (35%), education stage (30%), field of study specialization (25%), and country alignment & financial need criteria (10%).
+              Our evaluation considers GPA threshold fulfillment (35%), education stage (30%), field of study specialization (25%), and country alignment & financial need criteria (10%).
             </p>
           </div>
         </div>

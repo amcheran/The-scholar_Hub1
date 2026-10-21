@@ -1,7 +1,7 @@
 import React from 'react';
 import { Opportunity, UserProfile } from '../types';
 import { calculateMatchScore, formatDeadlineCountdown, hasUserPreferences } from '../utils/matchingEngine';
-import { Bookmark, Clock, Sparkles, ChevronRight } from 'lucide-react';
+import { Bookmark, Clock, Target, ChevronRight } from 'lucide-react';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -61,7 +61,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
                 className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors hover:brightness-95 flex-shrink-0 ${matchBadgeColor}`}
                 title="Click to view match score calculation breakdown"
               >
-                <Sparkles className="w-3 h-3 text-emerald-600 flex-shrink-0" />
+                <Target className="w-3 h-3 text-emerald-600 flex-shrink-0" />
                 <span className="whitespace-nowrap">{matchData.score}% Match</span>
               </button>
             ) : (
@@ -70,7 +70,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
                 className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors flex-shrink-0"
                 title="Set your GPA and Major in your profile to calculate your match score"
               >
-                <Sparkles className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                <Target className="w-3 h-3 text-slate-400 flex-shrink-0" />
                 <span className="whitespace-nowrap">Set Preferences to Match</span>
               </button>
             )}

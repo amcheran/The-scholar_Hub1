@@ -1,7 +1,7 @@
 import React from 'react';
 import { Opportunity, UserProfile } from '../types';
 import { calculateMatchScore, hasUserPreferences } from '../utils/matchingEngine';
-import { X, CheckCircle2, AlertCircle, ArrowRight, Sparkles, UserCheck } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, ArrowRight, Target, UserCheck } from 'lucide-react';
 
 interface MatchBreakdownModalProps {
   opportunity: Opportunity | null;
@@ -62,10 +62,10 @@ export const MatchBreakdownModal: React.FC<MatchBreakdownModalProps> = ({
           {hasPrefs && matchData ? (
             <>
               <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-100 flex items-start gap-3">
-                <Sparkles className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                <Target className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                 <div className="text-xs text-emerald-950 leading-relaxed">
-                  ScholarHub's matching engine scored this opportunity at{' '}
-                  <strong className="font-semibold text-emerald-900">{matchData.score}% compatibility</strong> based on your academic credentials and financial profile.
+                  This opportunity holds a{' '}
+                  <strong className="font-semibold text-emerald-900">{matchData.score}% match</strong> based on your verified academic standing and degree preferences.
                 </div>
               </div>
 
