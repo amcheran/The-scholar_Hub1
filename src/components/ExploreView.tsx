@@ -15,8 +15,6 @@ import {
   GraduationCap,
   Award,
   Megaphone,
-  ChevronLeft,
-  ChevronRight,
   Star,
   Building2,
   CheckCircle2,
@@ -72,6 +70,36 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
     }, 6000);
     return () => clearInterval(interval);
   }, [isPaused, showPartnerModal]);
+
+  // Touch swipe support for smooth mobile gestures between slides
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.targetTouches[0].clientX);
+    setIsPaused(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    setIsPaused(false);
+    if (touchStartX !== null && touchEndX !== null) {
+      const distance = touchStartX - touchEndX;
+      const minSwipeDistance = 45;
+      if (distance > minSwipeDistance) {
+        // Swiped left -> advance to next slide
+        setCurrentSlide((prev) => (prev + 1) % 3);
+      } else if (distance < -minSwipeDistance) {
+        // Swiped right -> go to previous slide
+        setCurrentSlide((prev) => (prev === 0 ? 2 : prev - 1));
+      }
+    }
+    setTouchStartX(null);
+    setTouchEndX(null);
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activePill, setActivePill] = useState<FilterPill>('all');
@@ -194,12 +222,15 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   }, [opportunities, searchQuery, activePill, selectedType, sortBy, profile, hasPrefs]);
 
   return (
-    <div className="space-y-6 w-full max-w-full">
-      {/* Hero Carousel Banner (3 interactive slides with African campus background & advertising option) */}
+    <div className="w-full max-w-full">
+      {/* Hero Carousel Banner (Full horizontal bleed edge-to-edge directly beneath the header with sharp rectangular edges) */}
       <div
-        className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-800/80 bg-slate-950 text-white min-h-[340px] sm:min-h-[300px] flex flex-col justify-between"
+        className="w-full mb-6 rounded-none border-b border-slate-800/80 shadow-md bg-slate-950 text-white min-h-[340px] sm:min-h-[300px] flex flex-col justify-between overflow-hidden relative"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Slide 0: Personalized Student Opportunities (Image-backed with African University Campus) */}
         {currentSlide === 0 && (
@@ -258,8 +289,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               </p>
             </div>
 
-            {/* Quick Metrics Strip */}
-            <div className="mt-6 pt-4 border-t border-white/15 flex flex-wrap items-center gap-6 text-xs sm:text-sm relative z-10">
+            {/* Quick Metrics Strip (pr-24/pr-28 ensures text and actions never overlap with floating dots) */}
+            <div className="mt-6 pt-4 border-t border-white/15 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm relative z-10 pr-24 sm:pr-28">
               <div className="flex items-center gap-2">
                 <span className="text-slate-300">Total Program Funding:</span>
                 <span className="font-extrabold text-emerald-400 text-base">
@@ -317,8 +348,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               </p>
             </div>
 
-            {/* Quick Action & Criteria Pills */}
-            <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center gap-3 relative z-10">
+            {/* Quick Action & Criteria Pills (pr-24/pr-28 ensures text and actions never overlap with floating dots) */}
+            <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center gap-3 relative z-10 pr-24 sm:pr-28">
               <button
                 onClick={() => {
                   setActivePill('high_award');
@@ -372,8 +403,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               </p>
             </div>
 
-            {/* Quick Action Strip */}
-            <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center gap-3 relative z-10">
+            {/* Quick Action Strip (pr-24/pr-28 ensures text and actions never overlap with floating dots) */}
+            <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center gap-3 relative z-10 pr-24 sm:pr-28">
               <button
                 onClick={() => setShowPartnerModal(true)}
                 className="px-4 py-2 rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-xs transition-colors"
@@ -391,58 +422,37 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           </div>
         )}
 
-        {/* Carousel Controls: Three Pagination Dots in the Bottom Corner + Prev/Next Buttons */}
-        <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 z-20 flex items-center gap-2">
-          {/* Previous Arrow */}
-          <button
-            type="button"
-            onClick={() => setCurrentSlide((prev) => (prev === 0 ? 2 : prev - 1))}
-            className="w-7 h-7 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
-            aria-label="Previous slide"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          {/* Exactly 3 Pagination Dots */}
-          <div className="flex items-center gap-1.5 bg-slate-950/80 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-white/15">
-            {[0, 1, 2].map((idx) => {
-              const isActive = currentSlide === idx;
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setCurrentSlide(idx)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    isActive
-                      ? 'w-6 bg-emerald-400'
-                      : 'w-2 bg-white/40 hover:bg-white/70'
-                  }`}
-                  aria-label={`Go to slide ${idx + 1}`}
-                  title={
-                    idx === 0
-                      ? 'Tailored Opportunities'
-                      : idx === 1
-                      ? 'Featured & Sponsored Programs'
-                      : 'Sponsor & Partner Opportunities'
-                  }
-                />
-              );
-            })}
-          </div>
-
-          {/* Next Arrow */}
-          <button
-            type="button"
-            onClick={() => setCurrentSlide((prev) => (prev === 2 ? 0 : prev + 1))}
-            className="w-7 h-7 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
-            aria-label="Next slide"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+        {/* Carousel Controls: 3 Simple Standalone Floating Pagination Dots (No Outer Capsule) */}
+        <div className="absolute bottom-4 right-5 sm:bottom-5 sm:right-8 z-30 flex items-center gap-2 pointer-events-auto">
+          {[0, 1, 2].map((idx) => {
+            const isActive = currentSlide === idx;
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setCurrentSlide(idx)}
+                className={`transition-all duration-300 focus:outline-none ${
+                  isActive
+                    ? 'w-6 h-2 bg-emerald-400 rounded-full'
+                    : 'w-2 h-2 bg-white/40 hover:bg-white/80 rounded-full'
+                }`}
+                aria-label={`Go to slide ${idx + 1}`}
+                title={
+                  idx === 0
+                    ? 'Tailored Opportunities'
+                    : idx === 1
+                    ? 'Featured & Sponsored Programs'
+                    : 'Sponsor & Partner Opportunities'
+                }
+              />
+            );
+          })}
         </div>
       </div>
 
-      {/* Progressive Profiling Quick Action Callout when user has not yet set preferences */}
+      {/* Main Explore Content Stream (Padded with clean breathing room below banner) */}
+      <div className="px-4 sm:px-6 space-y-6">
+        {/* Progressive Profiling Quick Action Callout when user has not yet set preferences */}
       {!hasPrefs && (
         <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border border-emerald-200/80 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
           <div className="flex items-start gap-3">
@@ -687,6 +697,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           )}
         </div>
       )}
+      </div>
 
       {/* Sponsor / Partner Inquiry Modal */}
       {showPartnerModal && (

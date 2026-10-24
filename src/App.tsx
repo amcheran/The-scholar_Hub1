@@ -501,7 +501,11 @@ function ScholarHubContent() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 pb-12 transition-all">
+      <main
+        className={`flex-1 max-w-6xl w-full mx-auto pb-12 transition-all ${
+          currentTab === 'explore' ? 'px-0 pt-0' : 'px-4 sm:px-6 py-6'
+        }`}
+      >
         {currentTab === 'explore' && (
           <ExploreView
             opportunities={opportunities}
