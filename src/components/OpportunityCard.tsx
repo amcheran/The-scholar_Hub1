@@ -1,7 +1,7 @@
 import React from 'react';
 import { Opportunity, UserProfile } from '../types';
-import { calculateMatchScore, formatDeadlineCountdown, hasUserPreferences } from '../utils/matchingEngine';
-import { Bookmark, Clock, Target, ChevronRight } from 'lucide-react';
+import { formatDeadlineCountdown } from '../utils/matchingEngine';
+import { Bookmark, Clock, ChevronRight } from 'lucide-react';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -9,7 +9,7 @@ interface OpportunityCardProps {
   isSaved: boolean;
   onToggleSave: (opportunityId: string) => void;
   onApplyClick: (opportunity: Opportunity) => void;
-  onMatchClick: (opportunity: Opportunity) => void;
+  onMatchClick?: (opportunity: Opportunity) => void;
 }
 
 export const OpportunityCard: React.FC<OpportunityCardProps> = ({
@@ -20,21 +20,13 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
   onApplyClick,
   onMatchClick,
 }) => {
-  const hasPrefs = hasUserPreferences(profile);
-  const matchData = hasPrefs ? calculateMatchScore(profile, opportunity) : null;
   const deadlineInfo = formatDeadlineCountdown(opportunity.deadline);
-
-  // Match badge styling
-  let matchBadgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-200/80';
-  if (matchData && matchData.score < 80) {
-    matchBadgeColor = 'bg-blue-50 text-blue-800 border-blue-200/80';
-  }
 
   return (
     <div className="group bg-white rounded-2xl border border-slate-200/90 hover:border-slate-300 shadow-xs hover:shadow-md transition-all duration-200 p-4 sm:p-5 w-full max-w-full overflow-hidden flex flex-col justify-between relative box-border">
-      {/* Top row: Provider info, Match Score, Bookmark action */}
+      {/* Top row: Provider info & Bookmark action */}
       <div className="w-full min-w-0">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 w-full">
+        <div className="flex items-center justify-between gap-2 mb-3 w-full">
           {/* Provider Logo, Name & Type in a flex item with min-w-0 flex-1 truncate */}
           <div className="flex items-center gap-2.5 min-w-0 flex-1 truncate">
             <div
@@ -52,43 +44,19 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
             </div>
           </div>
 
-          {/* Grouped inline container with flex-shrink-0 for Match Badge & Bookmark Button */}
-          <div className="inline-flex items-center gap-1.5 flex-shrink-0">
-            {/* Dynamic Match Score Badge or Preferences Prompt */}
-            {hasPrefs && matchData ? (
-              <button
-                onClick={() => onMatchClick(opportunity)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors hover:brightness-95 flex-shrink-0 ${matchBadgeColor}`}
-                title="Click to view match score calculation breakdown"
-              >
-                <Target className="w-3 h-3 text-emerald-600 flex-shrink-0" />
-                <span className="whitespace-nowrap">{matchData.score}% Match</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => onMatchClick(opportunity)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors flex-shrink-0"
-                title="Set your GPA and Major in your profile to calculate your match score"
-              >
-                <Target className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                <span className="whitespace-nowrap">Set Preferences to Match</span>
-              </button>
-            )}
-
-            {/* Bookmark button */}
-            <button
-              onClick={() => onToggleSave(opportunity.id)}
-              className={`p-2 rounded-xl border transition-all flex-shrink-0 ${
-                isSaved
-                  ? 'bg-slate-900 text-emerald-400 border-slate-900 shadow-xs'
-                  : 'bg-white text-slate-400 hover:text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-              }`}
-              aria-label={isSaved ? 'Remove from saved' : 'Save opportunity'}
-              title={isSaved ? 'Saved in Tracker' : 'Save to Tracker'}
-            >
-              <Bookmark className={`w-4 h-4 flex-shrink-0 ${isSaved ? 'fill-emerald-400 text-emerald-400' : ''}`} />
-            </button>
-          </div>
+          {/* Bookmark button */}
+          <button
+            onClick={() => onToggleSave(opportunity.id)}
+            className={`p-2 rounded-xl border transition-all flex-shrink-0 ${
+              isSaved
+                ? 'bg-slate-900 text-emerald-400 border-slate-900 shadow-xs'
+                : 'bg-white text-slate-400 hover:text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+            }`}
+            aria-label={isSaved ? 'Remove from saved' : 'Save opportunity'}
+            title={isSaved ? 'Saved in Tracker' : 'Save to Tracker'}
+          >
+            <Bookmark className={`w-4 h-4 flex-shrink-0 ${isSaved ? 'fill-emerald-400 text-emerald-400' : ''}`} />
+          </button>
         </div>
 
         {/* Title: line-clamp-2 and break-words */}

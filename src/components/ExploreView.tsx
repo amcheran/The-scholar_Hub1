@@ -76,8 +76,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [activePill, setActivePill] = useState<FilterPill>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
-  // Default sorting to "Deadline (Soonest)" or "Newest" when no user profile is set
-  const [sortBy, setSortBy] = useState<SortOption>(() => (hasUserPreferences(profile) ? 'match' : 'deadline_soon'));
+  // Default sorting to "Best Match" so opportunities are automatically sorted from best match to lowest match
+  const [sortBy, setSortBy] = useState<SortOption>('match');
 
   // Compute set of saved opportunity IDs for instant lookup
   const savedOppIds = useMemo(() => {
@@ -92,15 +92,6 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       return acc + (isNaN(val) ? 0 : val);
     }, 0);
   }, [opportunities]);
-
-  // Highest match score for the user's active preferences (only evaluated when user has set preferences)
-  const topMatchScore = useMemo(() => {
-    if (!hasPrefs || !opportunities || opportunities.length === 0) return 0;
-    const scores = opportunities
-      .map((o) => calculateMatchScore(profile, o).score)
-      .filter((s) => !isNaN(s));
-    return scores.length > 0 ? Math.max(...scores) : 0;
-  }, [hasPrefs, opportunities, profile]);
 
   // Dynamic user greeting: gracefully treats unconfigured user as Guest
   const userGreetingName = useMemo(() => {
@@ -178,13 +169,13 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       })
       .sort((a, b) => {
         if (sortBy === 'match') {
-          if (!hasPrefs) {
-            // When no profile is set, fall back to deadline
-            return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-          }
           const scoreA = calculateMatchScore(profile, a).score;
           const scoreB = calculateMatchScore(profile, b).score;
-          return scoreB - scoreA;
+          if (scoreB !== scoreA) {
+            return scoreB - scoreA;
+          }
+          // Secondary tie-breaker: soonest upcoming deadline
+          return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
         }
         if (sortBy === 'deadline_soon') {
           return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
@@ -282,9 +273,9 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-slate-300">Your Top Match:</span>
+                <span className="text-slate-300">Feed Order:</span>
                 <span className="font-extrabold text-emerald-400 text-base">
-                  {isLoading ? '...' : hasPrefs && topMatchScore > 0 ? `${topMatchScore}%` : '--'}
+                  Best Match
                 </span>
               </div>
               <button
@@ -567,15 +558,9 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
               onChange={(e) => setSortBy(e.target.value as SortOption)}
               className="text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-slate-900"
             >
+              <option value="match">Best Match (Default)</option>
               <option value="deadline_soon">Deadline (Soonest)</option>
               <option value="newest">Newest Added</option>
-              {hasPrefs ? (
-                <option value="match">Highest Match %</option>
-              ) : (
-                <option value="match" disabled>
-                  Highest Match % (Set profile first)
-                </option>
-              )}
               <option value="amount_desc">Largest Award</option>
               <option value="gpa_asc">Lowest GPA Requirement</option>
             </select>
