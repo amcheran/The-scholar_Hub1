@@ -10,16 +10,8 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ variant = 'n
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showGuide, setShowGuide] = useState(false);
 
-  // If already running in standalone PWA window, display subtle active badge if card variant
+  // If already running in standalone PWA window, do not render any extra status banner
   if (isInstalled) {
-    if (variant === 'card') {
-      return (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>Running as installed ScholarHub PWA</span>
-        </div>
-      );
-    }
     return null;
   }
 

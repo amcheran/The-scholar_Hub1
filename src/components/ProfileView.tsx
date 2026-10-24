@@ -10,22 +10,19 @@ import {
   User,
   GraduationCap,
   Save,
-  RotateCcw,
   CheckCircle2,
   TrendingUp,
   Globe,
-  LogOut,
   Check,
   ShieldCheck,
   ArrowRight,
 } from 'lucide-react';
-import { PWAInstallButton } from './PWAInstallButton';
 
 interface ProfileViewProps {
   profile: UserProfile;
   opportunities: Opportunity[];
   onSaveProfile: (updatedProfile: UserProfile) => void;
-  onResetDatabase: () => void;
+  onResetDatabase?: () => void;
   onGoToExplore: () => void;
   onSignOut?: () => void;
 }
@@ -171,48 +168,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-              Student Profile & Academic Preferences
-            </h1>
-            <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                profileCompletionPercentage === 100
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                  : 'bg-amber-100 text-amber-800 border border-amber-300'
-              }`}
-            >
-              {profileCompletionPercentage}% Complete
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Configure your academic profile to unlock personalized scholarship recommendations across 5,000+ verified opportunities.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onResetDatabase}
-            className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-            title="Refresh latest scholarship listings"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Refresh Data</span>
-          </button>
-
-          {onSignOut && (
-            <button
-              onClick={onSignOut}
-              className="px-3.5 py-2 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-              title="Sign out of ScholarHub"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Log Out</span>
-            </button>
-          )}
-        </div>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+          Student Profile & Academic Preferences
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          Configure your academic profile to unlock personalized scholarship recommendations across 5,000+ verified opportunities.
+        </p>
       </div>
 
       {/* Progressive Profiling Overview Card */}
@@ -278,8 +240,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       </div>
 
-      {/* PWA Install Promotion Card */}
-      <PWAInstallButton variant="card" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form Container (2 columns on large screens) */}
