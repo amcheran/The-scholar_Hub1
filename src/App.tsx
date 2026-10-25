@@ -3,6 +3,7 @@ import { Navbar, NavTab } from './components/Navbar';
 import { ExploreView } from './components/ExploreView';
 import { TrackerView } from './components/TrackerView';
 import { ProfileView } from './components/ProfileView';
+import { Footer } from './components/Footer';
 import { ApplyModal } from './components/ApplyModal';
 import { MatchBreakdownModal } from './components/MatchBreakdownModal';
 import { ToastProvider, useToast } from './components/Toast';
@@ -547,6 +548,9 @@ function ScholarHubContent() {
           />
         )}
       </main>
+
+      {/* Student-Facing Footer across all views */}
+      <Footer onNavigate={handleTabChange} />
 
       {/* Modals */}
       <ApplyModal

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { AuthService, AuthSessionState } from '../services/authService';
 import campusBg from '../assets/images/african_university_campus_1792084597873.jpg';
+import { Footer } from './Footer';
 
 interface AuthWallProps {
   onAuthenticated: (state: AuthSessionState) => void;
@@ -77,9 +78,9 @@ export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-hidden bg-slate-950 font-sans">
+    <div className="relative min-h-screen w-full flex flex-col justify-between overflow-x-hidden bg-slate-950 font-sans">
       {/* Background Image: Sunlit Modern African University Campus */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <img
           src={campusBg}
           alt="African University Campus"
@@ -102,7 +103,8 @@ export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
       </div>
 
       {/* Main Container */}
-      <div className="relative z-10 w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <div className="relative z-10 w-full flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8 py-10 sm:py-16">
+        <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
         {/* Left Column: Platform Branding & Mission */}
         <div className="lg:col-span-7 text-white space-y-6 pt-4 lg:pt-0">
           {/* Logo & Tag */}
@@ -344,12 +346,18 @@ export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
           </div>
         </div>
       </div>
+    </div>
+
+      {/* Student-Facing Footer */}
+      <div className="relative z-10 w-full">
+        <Footer />
+      </div>
 
       {/* Floating button to view full background photograph */}
       <button
         type="button"
         onClick={() => setShowPhotoModal(true)}
-        className="fixed bottom-4 left-4 z-20 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 text-xs backdrop-blur-md transition-all shadow-lg hover:shadow-emerald-950/20 group"
+        className="fixed bottom-4 left-4 z-20 hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white border border-white/10 text-xs backdrop-blur-md transition-all shadow-lg hover:shadow-emerald-950/20 group cursor-pointer"
         title="View full African campus photograph"
       >
         <ImageIcon className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />

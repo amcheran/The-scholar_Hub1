@@ -671,6 +671,27 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
         </div>
       )}
 
+      {/* Visual Bridge to Footer at End of Feed */}
+      {!isLoading && !error && filteredOpportunities.length > 0 && (
+        <div className="pt-8 pb-4 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>
+              Viewing all {filteredOpportunities.length}{' '}
+              {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'} matching your filters.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => document.getElementById('scholarhub-footer')?.scrollIntoView({ behavior: 'smooth' })}
+            className="inline-flex items-center gap-1.5 font-bold text-emerald-700 hover:text-emerald-800 transition-colors cursor-pointer bg-emerald-50 hover:bg-emerald-100/80 px-3 py-1.5 rounded-lg border border-emerald-200 shadow-2xs"
+          >
+            <span>Explore FAQs, Support & Legal Footer</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Empty State */}
       {!isLoading && !error && filteredOpportunities.length === 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center max-w-md mx-auto">

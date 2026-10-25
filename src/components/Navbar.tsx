@@ -9,6 +9,7 @@ import {
   X,
   ChevronRight,
   Bookmark,
+  HelpCircle,
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -402,6 +403,31 @@ export const Navbar: React.FC<NavbarProps> = ({
             <p className="text-[11px] text-emerald-800 leading-relaxed">
               ScholarHub scores verified international & local African university opportunities against your profile.
             </p>
+          </div>
+
+          {/* Help & Information / Quick Footer Link */}
+          <div className="pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => {
+                setIsMenuOpen(false);
+                setTimeout(() => {
+                  document.getElementById('scholarhub-footer')?.scrollIntoView({ behavior: 'smooth' });
+                }, 150);
+              }}
+              className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-slate-700 transition-all text-left cursor-pointer group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-white text-emerald-600 shadow-2xs group-hover:scale-105 transition-transform">
+                  <HelpCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-900">Help, FAQs & Legal</div>
+                  <div className="text-[10px] text-slate-400 font-medium">Terms, Privacy & Contact Support</div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all" />
+            </button>
           </div>
         </div>
 
