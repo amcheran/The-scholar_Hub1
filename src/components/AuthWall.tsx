@@ -16,16 +16,19 @@ import {
   Image as ImageIcon,
   X,
   Maximize2,
+  Info,
 } from 'lucide-react';
 import { AuthService, AuthSessionState } from '../services/authService';
 import campusBg from '../assets/images/african_university_campus_1792084597873.jpg';
 import { Footer } from './Footer';
+import { NavTab } from './Navbar';
 
 interface AuthWallProps {
   onAuthenticated: (state: AuthSessionState) => void;
+  onNavigate?: (tab: NavTab) => void;
 }
 
-export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
+export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated, onNavigate }) => {
   const [mode, setMode] = useState<'signin' | 'signup'>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -102,6 +105,42 @@ export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-transparent" />
       </div>
 
+      {/* Top Header on AuthWall for Public Browsing */}
+      <header className="relative z-20 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white shadow-md">
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <span className="font-extrabold text-lg text-white tracking-tight">ScholarHub</span>
+              <span className="hidden sm:inline-block text-[10px] text-emerald-400 font-semibold ml-2">Higher Ed Funding</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => onNavigate?.('about')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/15 transition-all cursor-pointer"
+            >
+              <Info className="w-3.5 h-3.5 text-emerald-400" />
+              <span>About Us</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleGuestEntry}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span className="hidden xs:inline">Guest Preview</span>
+              <span className="xs:hidden">Preview</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
       {/* Main Container */}
       <div className="relative z-10 w-full flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8 py-10 sm:py-16">
         <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
@@ -176,6 +215,19 @@ export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
                 Amina K. &bull; Engineering Scholar, Nairobi
               </div>
             </div>
+          </div>
+
+          {/* Direct link to About Us */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => onNavigate?.('about')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-emerald-300 hover:text-white border border-emerald-500/30 text-xs font-semibold transition-all group cursor-pointer"
+            >
+              <Info className="w-4 h-4 text-emerald-400" />
+              <span>About ScholarHub: Vision, 3-Step Process & Partnerships</span>
+              <ArrowRight className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
+            </button>
           </div>
         </div>
 
@@ -350,7 +402,7 @@ export const AuthWall: React.FC<AuthWallProps> = ({ onAuthenticated }) => {
 
       {/* Student-Facing Footer */}
       <div className="relative z-10 w-full">
-        <Footer />
+        <Footer onNavigate={onNavigate} />
       </div>
 
       {/* Floating button to view full background photograph */}

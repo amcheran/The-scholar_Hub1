@@ -23,6 +23,8 @@ interface NavbarProps {
   savedCount: number;
   profile: UserProfile;
   onSignOut?: () => void;
+  isAuthenticated?: boolean;
+  onSignIn?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -31,6 +33,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   savedCount,
   profile,
   onSignOut,
+  isAuthenticated = true,
+  onSignIn,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -156,40 +160,53 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-2 sm:gap-2.5">
             <PWAInstallButton variant="nav" />
 
-            {/* Dark Pill: Avatar & Profile Indicator */}
-            <button
-              onClick={() => handleNavSelect('profile')}
-              className="flex items-center gap-2 pl-1.5 pr-2 sm:pr-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white shadow-sm transition-all group"
-              title="View & Edit Profile"
-            >
-              <div className="relative">
-                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 font-black text-xs flex items-center justify-center shadow-xs">
-                  {userInitial}
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-slate-900" />
-              </div>
-              <div className="text-left hidden sm:block">
-                <div className="text-xs font-semibold text-slate-100 leading-none truncate max-w-[85px] group-hover:text-emerald-300 transition-colors">
-                  {profile?.fullName?.trim() || 'Scholar'}
-                </div>
-                <div className="text-[9px] text-emerald-400/90 font-medium tracking-wide mt-0.5">
-                  {profile?.isConfigured && typeof profile?.gpa === 'number' && profile.gpa > 0
-                    ? `GPA ${profile.gpa.toFixed(2)}`
-                    : 'Profile'}
-                </div>
-              </div>
-            </button>
-
-            {/* Desktop Logout Button */}
-            {onSignOut && (
+            {/* Profile or Sign-In button */}
+            {!isAuthenticated ? (
               <button
-                onClick={handleLogout}
-                className="hidden md:flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 shadow-sm transition-all text-[11px] font-bold tracking-wider uppercase active:scale-95 group"
-                title="Sign out of ScholarHub"
+                onClick={onSignIn}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
               >
-                <LogOut className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-400 transition-colors" />
-                <span className="text-[11px] font-bold tracking-wider">Logout</span>
+                <User className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Sign In</span>
               </button>
+            ) : (
+              <>
+                {/* Dark Pill: Avatar & Profile Indicator */}
+                <button
+                  onClick={() => handleNavSelect('profile')}
+                  className="flex items-center gap-2 pl-1.5 pr-2 sm:pr-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white shadow-sm transition-all group"
+                  title="View & Edit Profile"
+                >
+                  <div className="relative">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 font-black text-xs flex items-center justify-center shadow-xs">
+                      {userInitial}
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-slate-900" />
+                  </div>
+                  <div className="text-left hidden sm:block">
+                    <div className="text-xs font-semibold text-slate-100 leading-none truncate max-w-[85px] group-hover:text-emerald-300 transition-colors">
+                      {profile?.fullName?.trim() || 'Scholar'}
+                    </div>
+                    <div className="text-[9px] text-emerald-400/90 font-medium tracking-wide mt-0.5">
+                      {profile?.isConfigured && typeof profile?.gpa === 'number' && profile.gpa > 0
+                        ? `GPA ${profile.gpa.toFixed(2)}`
+                        : 'Profile'}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Desktop Logout Button */}
+                {onSignOut && (
+                  <button
+                    onClick={handleLogout}
+                    className="hidden md:flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 shadow-sm transition-all text-[11px] font-bold tracking-wider uppercase active:scale-95 group"
+                    title="Sign out of ScholarHub"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-400 transition-colors" />
+                    <span className="text-[11px] font-bold tracking-wider">Logout</span>
+                  </button>
+                )}
+              </>
             )}
 
             {/* Hamburger Side Menu Toggle Button */}
@@ -500,6 +517,64 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
       </aside>
+
+      {/* Mobile Bottom Navigation Bar (Visible on mobile/tablet < md) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-1.5 flex items-center justify-around shadow-lg">
+        <button
+          onClick={() => handleNavSelect('explore')}
+          className={`flex flex-col items-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
+            currentTab === 'explore'
+              ? 'text-emerald-700 font-bold'
+              : 'text-slate-600 hover:text-slate-900 font-medium'
+          }`}
+        >
+          <Compass className={`w-5 h-5 ${currentTab === 'explore' ? 'text-emerald-600' : 'text-slate-400'}`} />
+          <span className="text-[10px] mt-0.5">Explore</span>
+        </button>
+
+        <button
+          onClick={() => handleNavSelect('tracker')}
+          className={`flex flex-col items-center py-1 px-3 rounded-xl transition-all relative cursor-pointer ${
+            currentTab === 'tracker'
+              ? 'text-emerald-700 font-bold'
+              : 'text-slate-600 hover:text-slate-900 font-medium'
+          }`}
+        >
+          <div className="relative">
+            <CheckSquare className={`w-5 h-5 ${currentTab === 'tracker' ? 'text-emerald-600' : 'text-slate-400'}`} />
+            {savedCount > 0 && (
+              <span className="absolute -top-1 -right-2 text-[9px] font-black px-1.5 py-0.2 rounded-full bg-emerald-600 text-white leading-none">
+                {savedCount}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] mt-0.5">Tracker</span>
+        </button>
+
+        <button
+          onClick={() => handleNavSelect('profile')}
+          className={`flex flex-col items-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
+            currentTab === 'profile'
+              ? 'text-emerald-700 font-bold'
+              : 'text-slate-600 hover:text-slate-900 font-medium'
+          }`}
+        >
+          <User className={`w-5 h-5 ${currentTab === 'profile' ? 'text-emerald-600' : 'text-slate-400'}`} />
+          <span className="text-[10px] mt-0.5">Profile</span>
+        </button>
+
+        <button
+          onClick={() => handleNavSelect('about')}
+          className={`flex flex-col items-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
+            currentTab === 'about'
+              ? 'text-emerald-700 font-bold'
+              : 'text-slate-600 hover:text-slate-900 font-medium'
+          }`}
+        >
+          <Info className={`w-5 h-5 ${currentTab === 'about' ? 'text-emerald-600' : 'text-slate-400'}`} />
+          <span className="text-[10px] mt-0.5">About Us</span>
+        </button>
+      </nav>
     </>
   );
 };

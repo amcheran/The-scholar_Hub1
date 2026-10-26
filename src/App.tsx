@@ -488,8 +488,8 @@ function ScholarHubContent() {
 
   const isOnline = useNetworkStatus();
 
-  // Authentication Wall: If user is not authenticated, show modern Sign-Up / Login Wall
-  if (!authSession.isAuthenticated) {
+  // Authentication Wall: If user is not authenticated and not explicitly viewing the public /about page:
+  if (!authSession.isAuthenticated && currentTab !== 'about') {
     return (
       <AuthWall
         onAuthenticated={async (newSession) => {
@@ -511,6 +511,7 @@ function ScholarHubContent() {
             'success'
           );
         }}
+        onNavigate={handleTabChange}
       />
     );
   }
@@ -531,12 +532,17 @@ function ScholarHubContent() {
         onTabChange={handleTabChange}
         savedCount={savedApplications.length}
         profile={profile}
-        onSignOut={handleSignOut}
+        onSignOut={authSession.isAuthenticated ? handleSignOut : undefined}
+        isAuthenticated={authSession.isAuthenticated}
+        onSignIn={() => {
+          setAuthSession({ isAuthenticated: false, isGuest: false, user: null });
+          setCurrentTab('explore');
+        }}
       />
 
       {/* Main Content Area */}
       <main
-        className={`flex-1 max-w-6xl w-full mx-auto pb-12 transition-all ${
+        className={`flex-1 max-w-6xl w-full mx-auto pb-24 md:pb-12 transition-all ${
           currentTab === 'explore' ? 'px-0 pt-0' : 'px-4 sm:px-6 py-6'
         }`}
       >
@@ -552,6 +558,7 @@ function ScholarHubContent() {
             onApplyClick={(opp) => setApplyModalOpp(opp)}
             onMatchClick={(opp) => setMatchModalOpp(opp)}
             onGoToProfile={() => handleTabChange('profile')}
+            onGoToAbout={() => handleTabChange('about')}
           />
         )}
 
