@@ -16,6 +16,7 @@ import {
   Send,
   AlertCircle,
   Sparkles,
+  Info,
 } from 'lucide-react';
 import { NavTab } from './Navbar';
 
@@ -148,6 +149,15 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                     <span>Student Profile & Matching</span>
                   </button>
                 </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate?.('about')}
+                    className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group text-left cursor-pointer"
+                  >
+                    <Info className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+                    <span>About Us & Partnerships</span>
+                  </button>
+                </li>
               </ul>
             </div>
 
@@ -217,6 +227,12 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="border-t border-slate-800 pt-8 mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
             <p>© 2026 ScholarHub. All rights reserved.</p>
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs">
+              <button
+                onClick={() => onNavigate?.('about')}
+                className="hover:text-white text-slate-400 transition-colors cursor-pointer"
+              >
+                About Us
+              </button>
               <button
                 onClick={() => setActiveModal('terms')}
                 className="hover:text-slate-300 transition-colors cursor-pointer"

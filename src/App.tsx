@@ -3,6 +3,7 @@ import { Navbar, NavTab } from './components/Navbar';
 import { ExploreView } from './components/ExploreView';
 import { TrackerView } from './components/TrackerView';
 import { ProfileView } from './components/ProfileView';
+import { AboutView } from './components/AboutView';
 import { Footer } from './components/Footer';
 import { ApplyModal } from './components/ApplyModal';
 import { MatchBreakdownModal } from './components/MatchBreakdownModal';
@@ -45,8 +46,17 @@ function ScholarHubContent() {
   const [isLoadingOpportunities, setIsLoadingOpportunities] = useState<boolean>(true);
   const [opportunityError, setOpportunityError] = useState<string | null>(null);
 
-  // Navigation tab state
-  const [currentTab, setCurrentTab] = useState<NavTab>('explore');
+  // Navigation tab state with /about route support
+  const [currentTab, setCurrentTab] = useState<NavTab>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path === '/about' || hash === '#about') return 'about';
+      if (path === '/tracker' || hash === '#tracker') return 'tracker';
+      if (path === '/profile' || hash === '#profile') return 'profile';
+    }
+    return 'explore';
+  });
 
   // Modal active states
   const [applyModalOpp, setApplyModalOpp] = useState<Opportunity | null>(null);
@@ -144,10 +154,33 @@ function ScholarHubContent() {
     return new Set(savedApplications.map((app) => app.opportunityId));
   }, [savedApplications]);
 
-  // Tab change with smooth transition
+  // Listen to browser forward/back history events
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path === '/about' || hash === '#about') {
+        setCurrentTab('about');
+      } else if (path === '/tracker' || hash === '#tracker') {
+        setCurrentTab('tracker');
+      } else if (path === '/profile' || hash === '#profile') {
+        setCurrentTab('profile');
+      } else {
+        setCurrentTab('explore');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Tab change with smooth transition and URL pushState synchronization
   const handleTabChange = (tab: NavTab) => {
     startTransition(() => {
       setCurrentTab(tab);
+      const targetPath = tab === 'about' ? '/about' : tab === 'explore' ? '/' : `/${tab}`;
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ tab }, '', targetPath);
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   };
@@ -545,6 +578,13 @@ function ScholarHubContent() {
             onResetDatabase={handleResetDatabase}
             onGoToExplore={() => handleTabChange('explore')}
             onSignOut={handleSignOut}
+          />
+        )}
+
+        {currentTab === 'about' && (
+          <AboutView
+            onGoToExplore={() => handleTabChange('explore')}
+            onGoToProfile={() => handleTabChange('profile')}
           />
         )}
       </main>

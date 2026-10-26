@@ -10,11 +10,12 @@ import {
   ChevronRight,
   Bookmark,
   HelpCircle,
+  Info,
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
 
-export type NavTab = 'explore' | 'tracker' | 'profile';
+export type NavTab = 'explore' | 'tracker' | 'profile' | 'about';
 
 interface NavbarProps {
   currentTab: NavTab;
@@ -136,6 +137,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <User className="w-4 h-4 text-emerald-600" />
               Profile
+            </button>
+
+            <button
+              onClick={() => handleNavSelect('about')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                currentTab === 'about'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+              }`}
+            >
+              <Info className="w-4 h-4 text-emerald-600" />
+              About Us
             </button>
           </nav>
 
@@ -389,6 +402,44 @@ export const Navbar: React.FC<NavbarProps> = ({
               <ChevronRight
                 className={`w-4 h-4 transition-transform group-hover:translate-x-0.5 ${
                   currentTab === 'profile' ? 'text-slate-400' : 'text-slate-300'
+                }`}
+              />
+            </button>
+
+            {/* 4. About Us */}
+            <button
+              type="button"
+              onClick={() => handleNavSelect('about')}
+              className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all text-left group ${
+                currentTab === 'about'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`p-2 rounded-xl transition-colors ${
+                    currentTab === 'about'
+                      ? 'bg-white/10 text-emerald-400'
+                      : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200 group-hover:text-slate-900'
+                  }`}
+                >
+                  <Info className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold leading-snug">About ScholarHub</div>
+                  <div
+                    className={`text-xs ${
+                      currentTab === 'about' ? 'text-slate-300' : 'text-slate-400'
+                    }`}
+                  >
+                    Vision, 3-step process & partnerships
+                  </div>
+                </div>
+              </div>
+              <ChevronRight
+                className={`w-4 h-4 transition-transform group-hover:translate-x-0.5 ${
+                  currentTab === 'about' ? 'text-slate-400' : 'text-slate-300'
                 }`}
               />
             </button>
