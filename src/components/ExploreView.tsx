@@ -105,6 +105,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
   };
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activePill, setActivePill] = useState<FilterPill>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   // Default sorting to "Best Match" so opportunities are automatically sorted from best match to lowest match
@@ -132,57 +133,101 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
     return firstName || 'Guest';
   }, [profile?.fullName]);
 
-  // Dynamic search placeholder safely guarded against any 'nan' concatenation bug
+  // Dynamic search placeholder
   const searchPlaceholder = useMemo(() => {
-    if (selectedType && selectedType !== 'all') {
-      const cleanType = String(selectedType).trim();
-      const lowerType = cleanType.toLowerCase();
-      if (cleanType && lowerType !== 'nan' && lowerType !== 'undefined' && lowerType !== 'null') {
-        return `Search ${cleanType}s by name, field, or provider...`;
-      }
+    if (selectedCategory && selectedCategory !== 'all') {
+      return `Search ${selectedCategory} by name, organization, or keywords...`;
     }
+    return 'Search scholarships by name, organization, or category (e.g. Mastercard, STEM, Fellowship)...';
+  }, [selectedCategory]);
 
-    if (activePill && activePill !== 'all') {
-      const pillMap: Record<string, string> = {
-        due_soon: 'urgent opportunities',
-        no_essay: 'no-essay awards',
-        high_award: '$5k+ opportunities',
-        undergraduate: 'undergraduate awards',
-        graduate: 'graduate awards',
-      };
-      const category = pillMap[activePill];
-      if (category && !category.toLowerCase().includes('nan')) {
-        return `Search ${category} by name, field, or provider...`;
-      }
-    }
-
-    return 'Search scholarships, grants, loans by name, field, or provider...';
-  }, [selectedType, activePill]);
-
-  // Filter & sort logic
+  // Filter & sort logic: evaluates Name, Organization, Category, and Status criteria
   const filteredOpportunities = useMemo(() => {
     return opportunities
       .filter((opp) => {
-        // Search query filter
+        // 1. Search query filter across Name, Organization, Category, and Details
         if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase();
-          const matchTitle = opp.title.toLowerCase().includes(q);
-          const matchProvider = opp.providerName.toLowerCase().includes(q);
-          const matchMajor = opp.majorTag.toLowerCase().includes(q);
-          const matchDesc = opp.description.toLowerCase().includes(q);
-          if (!matchTitle && !matchProvider && !matchMajor && !matchDesc) {
-            return false;
+          const q = searchQuery.toLowerCase().trim();
+          const tokens = q.split(/\s+/).filter(Boolean);
+
+          const matchesAllTokens = tokens.every((token) => {
+            // Match Name (Title)
+            const matchName = opp.title.toLowerCase().includes(token);
+            // Match Organization (Provider)
+            const matchOrg = opp.providerName.toLowerCase().includes(token);
+            // Match Category (Major tag, Type, Education Levels)
+            const matchMajor = opp.majorTag.toLowerCase().includes(token);
+            const matchType = opp.type.toLowerCase().includes(token);
+            const matchEdu = opp.educationLevels.some((lvl) => lvl.toLowerCase().includes(token));
+            // Match keywords in description or eligibility criteria
+            const matchDesc = opp.description.toLowerCase().includes(token);
+            const matchEligibility = opp.eligibility.some((item) => item.toLowerCase().includes(token));
+
+            return matchName || matchOrg || matchMajor || matchType || matchEdu || matchDesc || matchEligibility;
+          });
+
+          if (!matchesAllTokens) return false;
+        }
+
+        // 2. Category selector filter (Academic disciplines or Funding formats)
+        if (selectedCategory !== 'all') {
+          const cat = selectedCategory.toLowerCase();
+          if (cat === 'stem') {
+            const isStem =
+              opp.majorTag.toLowerCase().includes('stem') ||
+              opp.majorTag.toLowerCase().includes('computer') ||
+              opp.title.toLowerCase().includes('stem') ||
+              opp.description.toLowerCase().includes('stem');
+            if (!isStem) return false;
+          } else if (cat === 'healthcare') {
+            const isHealth =
+              opp.majorTag.toLowerCase().includes('health') ||
+              opp.majorTag.toLowerCase().includes('medicine') ||
+              opp.majorTag.toLowerCase().includes('nursing') ||
+              opp.majorTag.toLowerCase().includes('biology') ||
+              opp.description.toLowerCase().includes('health');
+            if (!isHealth) return false;
+          } else if (cat === 'engineering') {
+            const isEng =
+              opp.majorTag.toLowerCase().includes('engineering') ||
+              opp.title.toLowerCase().includes('engineering') ||
+              opp.description.toLowerCase().includes('engineering');
+            if (!isEng) return false;
+          } else if (cat === 'business') {
+            const isBiz =
+              opp.majorTag.toLowerCase().includes('business') ||
+              opp.majorTag.toLowerCase().includes('finance') ||
+              opp.majorTag.toLowerCase().includes('accounting') ||
+              opp.majorTag.toLowerCase().includes('economics');
+            if (!isBiz) return false;
+          } else if (cat === 'arts') {
+            const isArts =
+              opp.majorTag.toLowerCase().includes('art') ||
+              opp.majorTag.toLowerCase().includes('humanities') ||
+              opp.majorTag.toLowerCase().includes('education') ||
+              opp.majorTag.toLowerCase().includes('law') ||
+              opp.majorTag.toLowerCase().includes('development');
+            if (!isArts) return false;
+          } else if (['scholarship', 'grant', 'student loan', 'fellowship'].includes(cat)) {
+            if (opp.type.toLowerCase() !== cat) return false;
+          } else {
+            if (
+              !opp.majorTag.toLowerCase().includes(cat) &&
+              !opp.type.toLowerCase().includes(cat)
+            ) {
+              return false;
+            }
           }
         }
 
-        // Type filter
+        // 3. Type filter
         if (selectedType !== 'all') {
           if (opp.type.toLowerCase() !== selectedType.toLowerCase()) {
             return false;
           }
         }
 
-        // Instant Filter Pills
+        // 4. Instant Filter Pills
         if (activePill === 'due_soon') {
           const { daysLeft } = formatDeadlineCountdown(opp.deadline);
           if (daysLeft > 25 || daysLeft < 0) return false;
@@ -222,10 +267,216 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
         }
         return 0;
       });
-  }, [opportunities, searchQuery, activePill, selectedType, sortBy, profile, hasPrefs]);
+  }, [opportunities, searchQuery, selectedCategory, activePill, selectedType, sortBy, profile, hasPrefs]);
+
+  const POPULAR_SEARCH_SUGGESTIONS = [
+    { label: 'Mastercard Foundation', query: 'Mastercard' },
+    { label: 'STEM & Tech', value: 'stem' },
+    { label: 'Healthcare & Medicine', value: 'healthcare' },
+    { label: 'Engineering', value: 'engineering' },
+    { label: 'Business & Finance', value: 'business' },
+    { label: 'Scholarships', value: 'scholarship' },
+    { label: 'Grants', value: 'grant' },
+    { label: 'Student Loans', value: 'student loan' },
+    { label: 'Fellowships', value: 'fellowship' },
+  ];
 
   return (
     <div className="w-full max-w-full">
+      {/* =========================================================================
+          TOP SEARCH BAR: High-visibility search & filter header for ExploreView
+          Allows instant filtering by Name, Organization, or Category
+          ========================================================================= */}
+      <section className="w-full bg-white border-b border-slate-200/90 shadow-xs px-4 sm:px-6 py-4 sticky top-16 z-30">
+        <div className="max-w-6xl mx-auto space-y-2.5">
+          {/* Header Row: Label + Result Counter */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
+                <Search className="w-4 h-4 text-emerald-600" />
+              </div>
+              <span className="text-xs sm:text-sm font-extrabold text-slate-900 tracking-tight">
+                Search Opportunities
+              </span>
+              <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                • Filter by name, organization, or category
+              </span>
+            </div>
+
+            {/* Results Counter & Quick Reset */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="font-semibold text-slate-600">
+                Showing{' '}
+                <strong className="text-emerald-700 font-extrabold">
+                  {filteredOpportunities.length}
+                </strong>{' '}
+                {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}
+              </span>
+              {(searchQuery || selectedCategory !== 'all' || activePill !== 'all' || selectedType !== 'all') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedCategory('all');
+                    setActivePill('all');
+                    setSelectedType('all');
+                  }}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] transition-colors cursor-pointer"
+                  title="Reset all search filters"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Search Controls: Input Field + Category Dropdown + Jump Button */}
+          <div className="flex flex-col md:flex-row items-stretch gap-2">
+            {/* Search Input Box */}
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by scholarship name, organization, or category (e.g., Mastercard, STEM, Fellowship)..."
+                className="w-full pl-10 sm:pl-11 pr-9 py-2.5 sm:py-3 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-50/80 focus:bg-white text-slate-900 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all placeholder:text-slate-400 font-medium shadow-2xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 cursor-pointer rounded-lg hover:bg-slate-200/60 transition-colors"
+                  aria-label="Clear search query"
+                  title="Clear search query"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Category Dropdown */}
+            <div className="relative md:w-56 shrink-0">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full h-full py-2.5 sm:py-3 pl-3 pr-8 rounded-xl border border-slate-300 bg-white text-slate-800 text-xs sm:text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all shadow-2xs cursor-pointer appearance-none"
+              >
+                <option value="all">All Categories</option>
+                <optgroup label="Academic Fields">
+                  <option value="stem">STEM & Tech</option>
+                  <option value="healthcare">Healthcare & Medicine</option>
+                  <option value="engineering">Engineering</option>
+                  <option value="business">Business & Economics</option>
+                  <option value="arts">Arts & Humanities</option>
+                </optgroup>
+                <optgroup label="Opportunity Types">
+                  <option value="scholarship">Scholarships</option>
+                  <option value="grant">Grants</option>
+                  <option value="student loan">Student Loans</option>
+                  <option value="fellowship">Fellowships</option>
+                </optgroup>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                ▼
+              </div>
+            </div>
+
+            {/* Jump to results button */}
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('catalog-results-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-4 py-2.5 sm:py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-colors shrink-0 cursor-pointer active:scale-95"
+            >
+              <span>View Listings ({filteredOpportunities.length})</span>
+              <ArrowRight className="w-3.5 h-3.5 text-emerald-400" />
+            </button>
+          </div>
+
+          {/* Quick Filter Suggestions Strip */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs pt-0.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
+              Popular:
+            </span>
+            {POPULAR_SEARCH_SUGGESTIONS.map((item, idx) => {
+              const isSelected =
+                (item.value && selectedCategory === item.value) ||
+                (item.query && searchQuery.toLowerCase() === item.query.toLowerCase());
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    if (item.value) {
+                      setSelectedCategory(selectedCategory === item.value ? 'all' : item.value);
+                    } else if (item.query) {
+                      setSearchQuery(searchQuery.toLowerCase() === item.query.toLowerCase() ? '' : item.query);
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors border cursor-pointer ${
+                    isSelected
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs font-semibold'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Active Query Feedback Pill when searching */}
+          {(searchQuery.trim() || selectedCategory !== 'all') && (
+            <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-50/90 border border-emerald-200 text-emerald-950 text-xs flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>
+                  Active filter:{' '}
+                  {searchQuery.trim() && (
+                    <>
+                      Keyword <strong className="underline font-bold">&ldquo;{searchQuery}&rdquo;</strong>
+                    </>
+                  )}
+                  {searchQuery.trim() && selectedCategory !== 'all' && ' + '}
+                  {selectedCategory !== 'all' && (
+                    <>
+                      Category <strong className="font-bold uppercase text-[11px] bg-emerald-200/80 px-1.5 py-0.5 rounded">{selectedCategory}</strong>
+                    </>
+                  )}
+                  {' • '}
+                  <span className="font-semibold">{filteredOpportunities.length} opportunities match</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('catalog-results-section');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="font-bold text-emerald-800 hover:text-emerald-950 underline cursor-pointer"
+                >
+                  Scroll to Results ↓
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedCategory('all');
+                  }}
+                  className="text-slate-500 hover:text-slate-800 underline ml-2 cursor-pointer"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Hero Carousel Banner (Full horizontal bleed edge-to-edge directly beneath the header with sharp rectangular edges) */}
       <div
         className="w-full mb-6 rounded-none border-b border-slate-800/80 shadow-md bg-slate-950 text-white min-h-[340px] sm:min-h-[300px] flex flex-col justify-between overflow-hidden relative"
@@ -532,7 +783,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
       </div>
 
       {/* Search & Instant Filter Bar */}
-      <div id="catalog-search-bar" className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
+      <div id="catalog-results-section" className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs space-y-4">
         {/* Search Input */}
         <div className="relative">
           <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -753,14 +1004,15 @@ export const ExploreView: React.FC<ExploreViewProps> = ({
           </div>
           <h3 className="font-bold text-slate-900 text-base">No opportunities found</h3>
           <p className="text-xs text-slate-500 mt-1 mb-4 leading-relaxed">
-            {searchQuery || activePill !== 'all' || selectedType !== 'all'
+            {searchQuery || selectedCategory !== 'all' || activePill !== 'all' || selectedType !== 'all'
               ? 'No matching listings found for your current filter criteria.'
               : 'No scholarship or loan opportunities currently match your search.'}
           </p>
-          {(searchQuery || activePill !== 'all' || selectedType !== 'all') && (
+          {(searchQuery || selectedCategory !== 'all' || activePill !== 'all' || selectedType !== 'all') && (
             <button
               onClick={() => {
                 setSearchQuery('');
+                setSelectedCategory('all');
                 setActivePill('all');
                 setSelectedType('all');
               }}
